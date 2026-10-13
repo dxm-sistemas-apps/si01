@@ -670,10 +670,7 @@
           <div class="bg-blue p-1.5 rounded-lg shadow-sm mb-2">
               <img id="appLogo" class="h-64 object-contain" alt="Logo DGAD">
           </div>
-          <div>
-              <h1 class="font-bold text-base md:text-lg leading-tight uppercase">controle de cargas</h1>
-              <p class="text-xs text-blue-200 uppercase">sistema integrado - equipe operacional</p>
-          </div>
+          
       </div>
   </header>
 
@@ -752,18 +749,18 @@
       </div>
 
       <div class="form-group">
-        <label>HORÁRIOS DA OPERAÇÃO: *</label>
+        <label>HORÁRIOS DA LOGÍSTICA: *</label>
         <div class="time-grid">
           <div>
-            <span class="text-[0.65rem] font-bold text-gray-500 uppercase">CHEGADA:</span>
+            <span class="text-[0.65rem] font-bold text-gray-500 uppercase">CHEGADA AO LOCAL:</span>
             <input type="time" id="reg-chegada">
           </div>
           <div>
-            <span class="text-[0.65rem] font-bold text-gray-500 uppercase">INÍCIO RECOLHIMENTO:</span>
+            <span class="text-[0.65rem] font-bold text-gray-500 uppercase">INÍCIO DO RECOLHIMENTO:</span>
             <input type="time" id="reg-inicio">
           </div>
           <div>
-            <span class="text-[0.65rem] font-bold text-gray-500 uppercase">TÉRMINO RECOLHIMENTO:</span>
+            <span class="text-[0.65rem] font-bold text-gray-500 uppercase">TÉRMINO DO RECOLHIMENTO:</span>
             <input type="time" id="reg-termino">
           </div>
         </div>
@@ -793,7 +790,7 @@
       <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
         <div>
           <h4 class="text-xs font-bold text-blue-900 uppercase">Relatório Parcial por Data</h4>
-          <p class="text-[0.7rem] text-blue-700">Salve as cargas do dia preenchido e limpe o campo data para apontar um novo lote de cargas.</p>
+          <p class="text-[0.7rem] text-blue-700 uppercase">Salve as cargas do dia preenchido e limpe o campo data para apontar um novo lote de cargas.</p>
         </div>
         <button id="btn-salvar-parcial" class="btn btn-blue w-full sm:w-60" onclick="salvarRelatorioParcial()">
           💾 SALVAR RELATÓRIO PARCIAL
