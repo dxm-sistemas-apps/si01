@@ -3,13 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AUTO DE INFRAÇÃO - DETRAN/RJ</title>
+    <title>AUTO DE INFRAÇÃO - DETRAN.RJ</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Alertas SweetAlert2 sempre centralizados e totalmente visíveis na parte visível da tela -->
+    <script>
+    (function () {
+        if (typeof Swal === 'undefined') return;
+
+        // Mantém o contêiner do alerta exatamente sobre a área VISÍVEL (considera zoom, barra do navegador e teclado)
+        function ajustarAreaVisivel() {
+            const c = document.querySelector('.swal2-container');
+            const vv = window.visualViewport;
+            if (!c || !vv) return;
+            c.style.setProperty('top', vv.offsetTop + 'px', 'important');
+            c.style.setProperty('left', vv.offsetLeft + 'px', 'important');
+            c.style.setProperty('width', vv.width + 'px', 'important');
+            c.style.setProperty('height', vv.height + 'px', 'important');
+            c.style.setProperty('right', 'auto', 'important');
+            c.style.setProperty('bottom', 'auto', 'important');
+        }
+        function ativarAreaVisivel() {
+            ajustarAreaVisivel();
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', ajustarAreaVisivel);
+                window.visualViewport.addEventListener('scroll', ajustarAreaVisivel);
+            }
+            window.addEventListener('resize', ajustarAreaVisivel);
+        }
+        function desativarAreaVisivel() {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', ajustarAreaVisivel);
+                window.visualViewport.removeEventListener('scroll', ajustarAreaVisivel);
+            }
+            window.removeEventListener('resize', ajustarAreaVisivel);
+        }
+
+        const fireOriginal = Swal.fire.bind(Swal);
+        Swal.fire = function (...args) {
+            if (args.length && args[0] && typeof args[0] === 'object') {
+                const opcoes = Object.assign({ position: 'center', heightAuto: false, scrollbarPadding: false }, args[0]);
+                opcoes.customClass = Object.assign({}, opcoes.customClass);
+                opcoes.customClass.popup = ('font-sans ' + (opcoes.customClass.popup || '')).trim();
+                const didOpenOriginal = opcoes.didOpen;
+                const didCloseOriginal = opcoes.didClose;
+                opcoes.didOpen = function (...a) {
+                    ativarAreaVisivel();
+                    if (typeof didOpenOriginal === 'function') return didOpenOriginal.apply(this, a);
+                };
+                opcoes.didClose = function (...a) {
+                    desativarAreaVisivel();
+                    if (typeof didCloseOriginal === 'function') return didCloseOriginal.apply(this, a);
+                };
+                args[0] = opcoes;
+            }
+            return fireOriginal(...args);
+        };
+    })();
+    </script>
+    <style>
+        .swal2-container {
+            position: fixed !important;
+            top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+            padding: 12px !important;
+            overflow-y: auto !important;
+        }
+        .swal2-popup {
+            box-sizing: border-box !important;
+            margin: auto !important;
+            max-width: 100% !important;
+            max-height: calc(100vh - 24px);
+            max-height: calc(100dvh - 24px);
+            overflow-y: auto;
+        }
+        .swal2-title,
+        .swal2-html-container {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .swal2-html-container {
+            max-height: 55vh;
+            max-height: 55dvh;
+            overflow-y: auto;
+        }
+    </style>
+    <!-- Ano vigente: atualiza sozinho a cada ano (nada de "2026" fixo) -->
+    <script>
+    window.ANO_VIGENTE = new Date().getFullYear();
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.js-ano').forEach(function (e) { e.textContent = window.ANO_VIGENTE; });
+    });
+    // Processo SEI: "SEI-" e o ano ficam fixos fora do campo; o usuário digita só os números (XXXXXX/XXXXXX)
+    function formatarProcessoSEI(v) {
+        var d = String(v || '').replace(/^\s*SEI-?/i, '').replace(/\D/g, '').slice(0, 12);
+        return d.length > 6 ? d.slice(0, 6) + '/' + d.slice(6) : d;
+    }
+    function processoCompletoSEI(id) {
+        var el = document.getElementById(id);
+        var v = el ? el.value.trim() : '';
+        return v ? 'SEI-' + v + '/' + window.ANO_VIGENTE : '';
+    }
+    function campoVazio(el) {
+        var v = el.value.trim();
+        if (!v) return true;
+        return el.dataset && el.dataset.processoSei ? v.length < 13 : false;
+    }
+    document.addEventListener('input', function (e) {
+        if (e.target && e.target.dataset && e.target.dataset.processoSei) e.target.value = formatarProcessoSEI(e.target.value);
+    }, true);
+    </script>
     <!-- html2pdf.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -155,20 +265,26 @@
         .anim-bounce {
             animation: bounceSubtle 1.8s infinite ease-in-out;
         }
+    
+        /* Cabeçalho do PDF: mesmas medidas do PDF da página carro (brasão 24 mm; títulos 12/10/9/9 pt; linhas de 5,5 mm) */
+        .pdf-document { --mm: 3.7129px; }
+        .cab-pdf-logo-wrap { display: flex; justify-content: center; margin: 0 0 calc(var(--mm) * 4) 0; }
+        .cab-pdf-logo { width: calc(var(--mm) * 24); height: calc(var(--mm) * 24); object-fit: contain; }
+        .cab-pdf-t1, .cab-pdf-t2, .cab-pdf-t3 { font-family: Helvetica, Arial, sans-serif !important; color: #000 !important; text-align: center; text-transform: uppercase !important; margin: 0 !important; line-height: calc(var(--mm) * 5.5) !important; }
+        .cab-pdf-t1 { font-size: calc(var(--mm) * 4.2333) !important; font-weight: bold !important; }
+        .cab-pdf-t2 { font-size: calc(var(--mm) * 3.5278) !important; font-weight: bold !important; }
+        .cab-pdf-t3 { font-size: calc(var(--mm) * 3.175) !important; font-weight: normal !important; }
     </style>
 </head>
 <body class="text-slate-800 antialiased pb-12 relative">
 
     <!-- Header Navigation -->
-    <header class="bg-gray-900 text-white shadow-md">
+    <header class="bg-[#001039] text-white shadow-md">
         <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col items-center justify-center text-center">
             <div class="bg-blue p-1.5 rounded-lg shadow-sm mb-2">
                 <img id="appLogo" class="h-64 object-contain" alt="Logo DGAD Suporte">
             </div>
-            <div>
-                <h1 class="font-bold text-base md:text-lg leading-tight uppercase">AUTO DE INFRAÇÃO</h1>
-                <p class="text-xs text-blue-200 uppercase">SISTEMA INTEGRADO - EQUIPE OPERACIONAL</p>
-            </div>
+            
         </div>
     </header>
 
@@ -177,21 +293,21 @@
             
             <div class="space-y-6">
                 <!-- Cabeçalho Oficial com Brasão -->
-                <header class="text-center border-b-2 border-gray-800 pb-4 mb-6">
+                <header class="font-sans text-gray-800 text-center border-b-2 border-gray-800 pb-4 mb-6">
                     <div class="flex justify-center mb-3">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png/500px-Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png" alt="Brasão do Estado do Rio de Janeiro" class="h-24 w-auto object-contain">
                     </div>
                     <h1 class="text-lg sm:text-xl font-bold uppercase tracking-wide">Governo do Estado do Rio de Janeiro</h1>
-                    <h2 class="text-md sm:text-lg font-semibold uppercase">Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN RJ</h2>
-                    <h3 class="text-sm sm:text-md font-medium text-slate-600 uppercase mt-1">Força-Tarefa de Fiscalização e Desmontagem</h3>
+            <h2 class="text-md sm:text-lg font-semibold uppercase">Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN.RJ</h2>
+            <h3 class="text-sm sm:text-md font-medium text-black-600 uppercase mt-1">Diretoria Geral das Atividades de Desmontagem</h3>
+            <h3 class="text-sm sm:text-md font-medium text-black-600 uppercase mt-1">DIVISÃO DE FISCALIZAÇÃO</h3>
+                                            
                 </header>
 
                 <!-- Card 1: Identificação -->
                 <div class="flex justify-between items-left mb-2 no-print">
                     <span class="text-xs font-bold text-gray-500 uppercase tracking-wider"></span>
-                    <button type="button" onclick="window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })" class="btn-scroll-dir anim-bounce" title="Rolar até o final">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-                    </button>
+                    
                 </div>
 
                 <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
@@ -203,17 +319,17 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                                Auto de Infração nº *
+                                Auto de Infração nº
                             </label>
                             <div class="flex items-center">
-                                <input type="text" id="inputNumAuto" placeholder="0001" 
+                                <input type="number" id="inputNumAuto" placeholder="001" 
                                     class="w-full px-3 py-2 rounded-l-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 text-sm">
-                                <span class="bg-slate-100 px-3 py-2 border border-l-0 border-slate-300 rounded-r-lg text-sm font-bold text-slate-600">/2026</span>
+                                <span class="bg-slate-100 px-3 py-2 border border-l-0 border-slate-300 rounded-r-lg text-sm font-bold text-slate-600">/<span class="js-ano">2026</span></span>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Data *</label>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Data</label>
                             <input type="date" id="inputDataAuto" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
                         </div>
 
@@ -224,7 +340,12 @@
 
                         <div class="md:col-span-3">
                             <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Processo nº</label>
-                            <input type="text" id="inputProcesso" placeholder="SEI-XXXXXXXX/XXXXXX/2026" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                            <div class="flex items-center">
+                                <span class="bg-slate-100 px-3 py-2 border border-r-0 border-slate-300 rounded-l-lg text-sm font-bold text-slate-600">SEI-</span>
+                                <input type="text" inputmode="numeric" autocomplete="off" maxlength="13" data-processo-sei="1" id="inputProcesso" placeholder="XXXXXX/XXXXXX"
+                                    class="w-full px-3 py-2 border border-slate-300 focus:ring-2 focus:ring-blue-600 text-sm min-w-0">
+                                <span class="bg-slate-100 px-3 py-2 border border-l-0 border-slate-300 rounded-r-lg text-sm font-bold text-slate-600">/<span class="js-ano">2026</span></span>
+                            </div>
                         </div>
 
                         <div class="md:col-span-2">
@@ -332,8 +453,10 @@
                                     <span id="placeholderSignInfrator" class="text-xs text-slate-400 italic">SEM ASSINATURA</span>
                                 </div>
                             </div>
-                            <button type="button" onclick="openSignatureModal('Infrator', 'Responsável Infrator')" class="w-full py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded">
-                                ASSINAR
+                            <button type="button" onclick="openSignatureModal('Infrator', 'Responsável Infrator')"
+                                class="w-full py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded shadow transition flex items-center justify-center space-x-1">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                <span>ASSINAR</span>
                             </button>
                         </div>
 
@@ -348,8 +471,10 @@
                                     <span id="placeholderSignFT1" class="text-xs text-slate-400 italic">SEM ASSINATURA</span>
                                 </div>
                             </div>
-                            <button type="button" onclick="openSignatureModal('FT1', 'Membro da Força-Tarefa 1')" class="w-full py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded">
-                                ASSINAR
+                            <button type="button" onclick="openSignatureModal('FT1', 'Membro da Força-Tarefa 1')"
+                                class="w-full py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded shadow transition flex items-center justify-center space-x-1">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                <span>ASSINAR</span>
                             </button>
                         </div>
 
@@ -364,8 +489,10 @@
                                     <span id="placeholderSignFT2" class="text-xs text-slate-400 italic">SEM ASSINATURA</span>
                                 </div>
                             </div>
-                            <button type="button" onclick="openSignatureModal('FT2', 'Membro da Força-Tarefa 2')" class="w-full py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded">
-                                ASSINAR
+                            <button type="button" onclick="openSignatureModal('FT2', 'Membro da Força-Tarefa 2')"
+                                class="w-full py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded shadow transition flex items-center justify-center space-x-1">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                <span>ASSINAR</span>
                             </button>
                         </div>
                     </div>
@@ -374,7 +501,7 @@
                 <!-- Botões de Ação -->
                 <div class="flex flex-col sm:flex-row flex-wrap gap-3 justify-end items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 no-print">
                     <button type="button" onclick="confirmClearAllForm()" 
-                        class="w-full sm:w-auto px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 font-semibold rounded-lg text-sm border border-red-200 transition flex items-center justify-center space-x-2">
+                        class="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm border border-red-200 transition flex items-center justify-center space-x-2">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                         <span>LIMPAR PÁGINA</span>
                     </button>
@@ -392,7 +519,7 @@
                     </button>
 
                     <button type="button" onclick="generatePDF(true)" 
-                        class="w-full sm:w-auto px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg text-sm shadow-md transition flex items-center justify-center space-x-2">
+                        class="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm shadow-md transition flex items-center justify-center space-x-2">
                         <i data-lucide="file-check-2" class="w-4 h-4"></i>
                         <span>GERAR PDF</span>
                     </button>
@@ -413,14 +540,15 @@
                                 <div style="text-align: left; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 14px;">
                                     <div style="display: flex; justify-content: center; margin-bottom: 6px;">
                                         <header class="text-center border-b-2 border-gray-800 pb-4 mb-6">
-                                            <div class="flex justify-center mb-3">
-                                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png/500px-Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png" alt="Brasão do Estado do Rio de Janeiro" class="h-24 w-auto object-contain">
+                                            <div class="cab-pdf-logo-wrap">
+                                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png/500px-Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png" alt="Brasão do Estado do Rio de Janeiro" class="cab-pdf-logo">
                                             </div>
-                                            <h2 style="font-size: 12.5px; font-weight: bold; margin: 0; text-transform: uppercase;">Governo do Estado do Rio de Janeiro</h2>
-                                            <h3 style="font-size: 11px; font-weight: bold; margin: 1px 0; text-transform: uppercase;">Secretaria de Estado da Casa Civil</h3>
-                                            <h4 style="font-size: 11px; font-weight: bold; margin: 1px 0; text-transform: uppercase;">Departamento de Trânsito do Estado do Rio de Janeiro</h4>
-                                            <h1 style="font-size: 12.5px; font-weight: bold; margin-top: 8px; text-transform: uppercase; text-decoration: underline;">
-                                                AUTO DE INFRAÇÃO Nº <span id="docNumAuto">______</span>/2026
+                                            <h1 class="cab-pdf-t1">Governo do Estado do Rio de Janeiro</h1>
+                                            <h2 class="cab-pdf-t2">Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN.RJ</h2>
+                                            <h3 class="cab-pdf-t3">Diretoria Geral das Atividades de Desmontagem</h3>
+                                            <h3 class="cab-pdf-t3">DIVISÃO DE FISCALIZAÇÃO</h3>
+                                            <h1 style="font-size: 12.5px; font-weight: bold; margin-top: 8px; text-transform: uppercase;">
+                                                AUTO DE INFRAÇÃO Nº <span id="docNumAuto">______</span>/<span class="js-ano">2026</span>
                                             </h1>
                                         </header>
                                     </div>
@@ -429,7 +557,7 @@
                                 <!-- Info Linha Superior -->
                                 <table style="width: 100%; font-size: 10.5px; margin-bottom: 12px; border-collapse: collapse;">
                                     <tr>
-                                        <td style="width: 35%; padding-bottom: 4px;"><strong>Data:</strong> <span id="docDataAuto">__/__/2026</span></td>
+                                        <td style="width: 35%; padding-bottom: 4px;"><strong>Data:</strong> <span id="docDataAuto">__/__/<span class="js-ano">2026</span></span></td>
                                         <td style="width: 30%;"><strong>Hora:</strong> <span id="docHoraAuto">__:__</span></td>
                                         <td style="width: 35%;"><strong>Processo:</strong> <span id="docProcesso">____________________</span></td>
                                     </tr>
@@ -482,11 +610,11 @@
 
                                 <!-- Texto Cautelar e Prazo Defesa -->
                                 <p style="font-size: 10px; line-height: 1.5; margin-bottom: 10px;">
-                                    Em caso de material cautelarmente apreendido, não havendo a comprovação de origem lícita do material, em até 05 (cinco) dias úteis, através da apresentação das notas fiscais originais em nome da empresa ou do sócio, o Detran RJ convocará Empresa de Reciclagem credenciada que efetuará a remoção, inutilização e a devida destinação final do material para Empresa de Siderurgia, não cabendo ao autuado nenhuma forma de ressarcimento do valor apurado.
+                                    Em caso de material cautelarmente apreendido, não havendo a comprovação de origem lícita do material, em até 05 (cinco) dias úteis, através da apresentação das notas fiscais originais em nome da empresa ou do sócio, o Detran.RJ convocará Empresa de Reciclagem credenciada que efetuará a remoção, inutilização e a devida destinação final do material para Empresa de Siderurgia, não cabendo ao autuado nenhuma forma de ressarcimento do valor apurado.
                                 </p>
 
                                 <p style="font-size: 10px; line-height: 1.5; margin-bottom: 14px;">
-                                    Lavrei o presente AUTO DE INFRAÇÃO em três vias, que vão por mim e pelo infrator assinadas, ficando uma via em seu poder, a fim de que, querendo, apresente defesa, no prazo de dez dias a contar da notificação, no Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN RJ, à Av. Presidente Vargas, 817, 2º andar, Rio de Janeiro/RJ, por meio de petição.
+                                    Lavrei o presente AUTO DE INFRAÇÃO em três vias, que vão por mim e pelo infrator assinadas, ficando uma via em seu poder, a fim de que, querendo, apresente defesa, no prazo de dez dias a contar da notificação, no Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN.RJ, à Av. Presidente Vargas, 817, 2º andar, Rio de Janeiro/RJ, por meio de petição.
                                 </p>
 
                                 <!-- Assinaturas -->
@@ -525,7 +653,7 @@
                                     </div>
                                 </div>
 
-                                <div style="text-align: right; font-size: 8.5px; font-weight: bold; margin-top: 16px;">Via 1 - DETRAN-RJ</div>
+                               // <div style="text-align: right; font-size: 8.5px; font-weight: bold; margin-top: 16px;">Via 1 - DETRAN-RJ</div>
                             </div>
                         </div>
                     </div>
@@ -596,9 +724,9 @@
             // Nº do Auto e Processo
             document.getElementById('docNumAuto').innerText = (document.getElementById('inputNumAuto').value.trim() || '______').toUpperCase();
             const dt = document.getElementById('inputDataAuto').value;
-            document.getElementById('docDataAuto').innerText = dt ? dt.split('-').reverse().join('/') : '__/__/2026';
+            document.getElementById('docDataAuto').innerText = dt ? dt.split('-').reverse().join('/') : '__/__/' + window.ANO_VIGENTE;
             document.getElementById('docHoraAuto').innerText = document.getElementById('inputHoraAuto').value || '__:__';
-            document.getElementById('docProcesso').innerText = (document.getElementById('inputProcesso').value.trim() || '____________________').toUpperCase();
+            document.getElementById('docProcesso').innerText = (processoCompletoSEI('inputProcesso') || '____________________').toUpperCase();
 
             // Dados Cadastrais
             document.getElementById('docRazaoSocial').innerText = (document.getElementById('inputRazaoSocial').value.trim() || '____________________').toUpperCase();
@@ -677,7 +805,7 @@
                 if (d.numAuto !== undefined) document.getElementById('inputNumAuto').value = d.numAuto;
                 if (d.dataAuto !== undefined) document.getElementById('inputDataAuto').value = d.dataAuto;
                 if (d.horaAuto !== undefined) document.getElementById('inputHoraAuto').value = d.horaAuto;
-                if (d.processo !== undefined) document.getElementById('inputProcesso').value = d.processo;
+                if (d.processo !== undefined) document.getElementById('inputProcesso').value = formatarProcessoSEI(d.processo);
                 if (d.razao !== undefined) document.getElementById('inputRazaoSocial').value = d.razao;
                 if (d.cnpj !== undefined) document.getElementById('inputCNPJ').value = d.cnpj;
                 if (d.endereco !== undefined) document.getElementById('inputEndereco').value = d.endereco;
@@ -835,18 +963,34 @@
 
         function scrollToPreview() { document.getElementById('previewAnchor').scrollIntoView({ behavior: 'smooth' }); }
 
-        function confirmClearAllForm() {
+        function rolarParaTopoAposLimpar() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // correção de segurança caso a rolagem suave seja interrompida pela mudança de layout
+            setTimeout(() => {
+                if (window.pageYOffset > 2) window.scrollTo({ top: 0, behavior: 'auto' });
+            }, 1200);
+        }
+
+                function confirmClearAllForm() {
             Swal.fire({
                 title: 'TEM CERTEZA?',
-                html: "<span class='text-amber-500 font-bold'>ATENÇÃO:</span> ISTO IRÁ <span class='text-red-600 font-bold'>APAGAR</span> TODOS OS DADOS!",
+                html: "<span class='text-amber-500 font-bold'>ATENÇÃO:  </span> ISTO IRÁ <span class='text-red-500 font-bold'> 'APAGAR' TODOS OS CAMPOS PREENCHIDOS NA PÁGINA </span>!",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#000000',
                 confirmButtonText: 'OK',
-                cancelButtonText: 'CANCELAR'
+                cancelButtonText: 'CANCELAR',
+                returnFocus: false,
+                didClose: () => {
+                    if (window.foiConfirmadoLimpar) {
+                        window.foiConfirmadoLimpar = false;
+                        setTimeout(() => { rolarParaTopoAposLimpar(); }, 100);
+                    }
+                }
             }).then((res) => {
                 if (res.isConfirmed) {
+                    window.foiConfirmadoLimpar = true;
                     limparTodosOsCampos();
                 }
             });
@@ -878,12 +1022,45 @@
             if (grupo) grupo.classList.remove('grupo-invalido');
         }
 
+        function rolarCampoParaCentro(el, aoTerminar) {
+            if (!el || !el.getBoundingClientRect) {
+                if (aoTerminar) aoTerminar();
+                return;
+            }
+            const rect = el.getBoundingClientRect();
+            const meio = rect.top + window.pageYOffset - (window.innerHeight / 2) + (rect.height / 2);
+            window.scrollTo({ top: Math.max(0, meio), behavior: 'smooth' });
+            if (!aoTerminar) return;
+
+            // aguarda a rolagem suave terminar para só então executar a ação (colocar o cursor)
+            let ultimo = window.pageYOffset, estavel = 0, quadros = 0;
+            const acompanhar = () => {
+                quadros++;
+                const atual = window.pageYOffset;
+                estavel = Math.abs(atual - ultimo) < 1 ? estavel + 1 : 0;
+                ultimo = atual;
+                if (estavel >= 8 || quadros > 90) aoTerminar();
+                else requestAnimationFrame(acompanhar);
+            };
+            requestAnimationFrame(acompanhar);
+        }
+
+        function focarNoCampo(el) {
+            if (!el || !el.focus) return;
+            try { el.focus({ preventScroll: true }); } catch (_) { el.focus(); }
+            try { if (el.select && el.tagName !== 'SELECT') el.select(); } catch (_) {}
+        }
+
+        // Chamada SOMENTE depois que o alerta fechou: rola o campo para o meio da tela e então coloca o cursor
+        function irParaCampoAposAlerta(alvo, campo) {
+            setTimeout(() => {
+                rolarCampoParaCentro(alvo, () => focarNoCampo(campo));
+            }, 120);
+        }
+
         function focarCampoInvalido(el) {
             el.classList.add('campo-invalido');
-            if (typeof el.scrollIntoView === 'function') {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            el.focus();
+            irParaCampoAposAlerta(el, el);
         }
 
         function validateForm() {
@@ -891,13 +1068,15 @@
 
             for (const campo of CAMPOS_OBRIGATORIOS) {
                 const el = document.getElementById(campo.id);
-                if (el && !el.value.trim()) {
+                if (el && campoVazio(el)) {
                     el.classList.add('campo-invalido');
                     Swal.fire({
                         icon: 'warning',
                         title: 'CAMPO OBRIGATÓRIO',
-                        text: `PREENCHA O CAMPO: ${campo.label.toUpperCase()}`
-                    }).then(() => focarCampoInvalido(el));
+                        html: `<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O CAMPO<br><b style="font-size:18px; color:#E53935;">"${campo.label.toUpperCase()}"</b>!`,
+                        returnFocus: false,
+                        didClose: () => focarCampoInvalido(el)
+                    });
                     return false;
                 }
             }
@@ -909,8 +1088,10 @@
                 Swal.fire({
                     icon: 'warning',
                     title: 'CAMPO OBRIGATÓRIO',
-                    text: 'PREENCHA O CAMPO "OBS.", POIS "OUTRAS INFRAÇÕES" ESTÁ MARCADO'
-                }).then(() => focarCampoInvalido(inputObs));
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O CAMPO<br><b style="font-size:18px; color:#E53935;">"OBS."</b>, POIS <b>"OUTRAS INFRAÇÕES"</b> ESTÁ MARCADO!',
+                    returnFocus: false,
+                    didClose: () => focarCampoInvalido(inputObs)
+                });
                 return false;
             }
 
@@ -923,19 +1104,25 @@
                 Swal.fire({
                     icon: 'warning',
                     title: 'CAMPO OBRIGATÓRIO',
-                    text: 'MARQUE AO MENOS UMA INFRAÇÃO/TIPIFICAÇÃO'
-                }).then(() => {
-                    if (grupo) grupo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    primeiroCheck.focus();
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> MARQUE AO MENOS <span class="text-red-500 font-bold">UMA INFRAÇÃO/TIPIFICAÇÃO</span>!',
+                    returnFocus: false,
+                    didClose: () => irParaCampoAposAlerta(grupo, primeiroCheck)
                 });
                 return false;
             }
 
             if (!signatures.FT1) {
+                const boxSig = document.getElementById('boxFT1');
+                if (boxSig) boxSig.classList.add('campo-invalido');
                 Swal.fire({
                     icon: 'warning',
                     title: 'ASSINATURA OBRIGATÓRIA',
-                    text: 'A ASSINATURA DO MEMBRO DA FORÇA-TAREFA 1 É OBRIGATÓRIA'
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> A ASSINATURA DO <br><b style="font-size:18px; color:#E53935;">"MEMBRO DA FORÇA-TAREFA 1"</b> É OBRIGATÓRIA!',
+                    returnFocus: false,
+                    didClose: () => {
+                        irParaCampoAposAlerta(boxSig, null);
+                        setTimeout(() => { if (boxSig) boxSig.classList.remove('campo-invalido'); }, 2500);
+                    }
                 });
                 return false;
             }
@@ -972,11 +1159,11 @@
                 ? inputDataVal.split('-').reverse().join('-')
                 : new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
 
-            const nomeArquivo = `AUTO DE INFRAÇÃO ${numAuto}-2026 - ${razao} - ${dataFormatada}.pdf`;
+            const nomeArquivo = `AUTO DE INFRAÇÃO ${numAuto}-${window.ANO_VIGENTE} - ${razao} - ${dataFormatada}.pdf`;
 
             Swal.fire({
                 title: 'GERANDO PDF...',
-                text: 'Aguarde o processamento...',
+                html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> AGUARDE O PROCESSAMENTO...',
                 allowOutsideClick: false,
                 didOpen: () => Swal.showLoading()
             });
@@ -1013,7 +1200,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'ERRO',
-                    text: 'Falha ao renderizar o documento.'
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> <span class="text-red-500 font-bold">FALHA AO RENDERIZAR O DOCUMENTO</span>.'
                 });
                 return;
             }
@@ -1040,7 +1227,7 @@
                     downloadLink.remove();
                 }
 
-                limparTodosOsCampos();
+                // limparTodosOsCampos();
                 rolarParaHistoricoPDF();
 
                 if (compartilhar) {
@@ -1050,7 +1237,7 @@
                 await Swal.fire({
                     icon: 'success',
                     title: 'SUCESSO',
-                    text: 'AUTO DE INFRAÇÃO GERADO COM SUCESSO! BAIXE PELO HISTÓRICO ABAIXO QUANDO QUISER.',
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> AUTO DE INFRAÇÃO GERADO COM SUCESSO!<br>BAIXE PELO <b>HISTÓRICO ABAIXO</b> QUANDO QUISER.',
                     returnFocus: false
                 });
 
@@ -1058,7 +1245,7 @@
             } catch (err) {
                 console.error(err);
                 Swal.close();
-                Swal.fire('ERRO', 'FALHA AO SALVAR/COMPARTILHAR O PDF.', 'error');
+                Swal.fire({ icon: 'error', title: 'ERRO', html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> <span class="text-red-500 font-bold">FALHA AO SALVAR/COMPARTILHAR O PDF</span>.', confirmButtonColor: '#000000' });
             }
         }
 
@@ -1078,13 +1265,13 @@
                     await navigator.share({
                         files: [arquivo],
                         title: nomeArquivo,
-                        text: 'PDF gerado pelo Sistema Integrado DETRAN/RJ.'
+                        text: 'PDF GERADO PELO SISTEMA INTEGRADO DETRAN.RJ!'
                     });
                 } else {
                     await Swal.fire({
                         icon: 'info',
                         title: 'COMPARTILHAMENTO NÃO DISPONÍVEL',
-                        text: 'ESTE NAVEGADOR NÃO SUPORTA COMPARTILHAMENTO DIRETO. BAIXE O PDF PELO HISTÓRICO ABAIXO E ANEXE MANUALMENTE NO WHATSAPP.',
+                        html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> ESTE NAVEGADOR <span class="text-red-500 font-bold">NÃO SUPORTA COMPARTILHAMENTO DIRETO</span>. BAIXE O PDF PELO HISTÓRICO ABAIXO E ANEXE MANUALMENTE NO WHATSAPP.',
                         confirmButtonColor: '#000000',
                         returnFocus: false
                     });
@@ -1133,32 +1320,90 @@
             `).join('');
         }
 
+                function avisarDownloadEAtualizar() {
+            Swal.fire({
+                icon: 'success',
+                title: 'DOWNLOAD INICIADO!',
+                html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O PDF ESTÁ SENDO BAIXADO. A PÁGINA SERÁ ATUALIZADA.',
+                timer: 1500,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then(() => { window.location.reload(); });
+        }
+
         function baixarPDFHistorico(id) {
             const h = JSON.parse(localStorage.getItem('historico_pdfs_infracao')) || [];
             const p = h.find(i => String(i.id) === String(id));
-            if (p?.dataUri) {
+            if (!p || !p.dataUri) return;
+
+            try {
+                const url = URL.createObjectURL(dataUriParaBlob(p.dataUri));
                 const a = document.createElement('a');
-                a.href = p.dataUri;
+                a.href = url;
                 a.download = p.nome || 'AUTO_DE_INFRACAO.pdf';
                 document.body.appendChild(a);
                 a.click();
-                a.remove();
+                avisarDownloadEAtualizar();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+            } catch (e) {
+                console.error('Erro ao baixar PDF:', e);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ERRO AO BAIXAR PDF',
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> <span class="text-red-500 font-bold">NÃO FOI POSSÍVEL</span> BAIXAR O PDF SALVO.',
+                    confirmButtonColor: '#000000'
+                });
             }
+        }
+
+        function dataUriParaBlob(dataUri) {
+            const partes = dataUri.split(',');
+            const mime = ((partes[0].match(/:(.*?);/) || [])[1]) || 'application/pdf';
+            const bin = atob(partes[1]);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) {
+                bytes[i] = bin.charCodeAt(i);
+            }
+            return new Blob([bytes], { type: mime });
         }
 
         function abrirPDF(id) {
             const h = JSON.parse(localStorage.getItem('historico_pdfs_infracao')) || [];
             const p = h.find(i => String(i.id) === String(id));
-            if (p?.dataUri) {
-                const w = window.open();
-                w.document.write(`<iframe src="${p.dataUri}" style="border:0;width:100%;height:100%;position:fixed;inset:0"></iframe>`);
+            if (!p || !p.dataUri) return;
+
+            let url;
+            try {
+                url = URL.createObjectURL(dataUriParaBlob(p.dataUri));
+            } catch (e) {
+                console.error('Erro ao preparar PDF:', e);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ERRO AO ABRIR PDF',
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> <span class="text-red-500 font-bold">NÃO FOI POSSÍVEL</span> ABRIR O PDF SALVO.',
+                    confirmButtonColor: '#000000'
+                });
+                return;
+            }
+
+            const win = window.open(url, '_blank');
+            if (!win) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'BLOQUEADOR DE POP-UP DETECTADO',
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PERMITA POP-UPS PARA ABRIR O PDF SALVO.',
+                    confirmButtonColor: '#000000'
+                });
             }
         }
 
         function excluirPDF(id) {
             Swal.fire({
                 title: 'EXCLUIR PDF?',
-                text: 'ATENÇÃO, ESTA AÇÃO NÃO PODERÁ SER DESFEITA.',
+                html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> ESTA AÇÃO <span class="text-red-500 font-bold">NÃO PODERÁ SER DESFEITA </span>.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -1174,7 +1419,7 @@
                     Swal.fire({
                         icon: 'success',
                         title: 'EXCLUÍDO!',
-                        text: 'ATENÇÃO, O PDF FOI EXCLUÍDO DO HISTÓRICO.',
+                        html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O PDF FOI EXCLUÍDO DO HISTÓRICO.',
                         timer: 1500,
                         showConfirmButton: false
                     });

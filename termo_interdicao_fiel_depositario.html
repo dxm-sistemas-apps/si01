@@ -10,6 +10,98 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Alertas SweetAlert2 sempre centralizados e totalmente visíveis na parte visível da tela -->
+    <script>
+    (function () {
+        if (typeof Swal === 'undefined') return;
+
+        // Mantém o contêiner do alerta exatamente sobre a área VISÍVEL (considera zoom, barra do navegador e teclado)
+        function ajustarAreaVisivel() {
+            const c = document.querySelector('.swal2-container');
+            const vv = window.visualViewport;
+            if (!c || !vv) return;
+            c.style.setProperty('top', vv.offsetTop + 'px', 'important');
+            c.style.setProperty('left', vv.offsetLeft + 'px', 'important');
+            c.style.setProperty('width', vv.width + 'px', 'important');
+            c.style.setProperty('height', vv.height + 'px', 'important');
+            c.style.setProperty('right', 'auto', 'important');
+            c.style.setProperty('bottom', 'auto', 'important');
+        }
+        function ativarAreaVisivel() {
+            ajustarAreaVisivel();
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', ajustarAreaVisivel);
+                window.visualViewport.addEventListener('scroll', ajustarAreaVisivel);
+            }
+            window.addEventListener('resize', ajustarAreaVisivel);
+        }
+        function desativarAreaVisivel() {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', ajustarAreaVisivel);
+                window.visualViewport.removeEventListener('scroll', ajustarAreaVisivel);
+            }
+            window.removeEventListener('resize', ajustarAreaVisivel);
+        }
+
+        const fireOriginal = Swal.fire.bind(Swal);
+        Swal.fire = function (...args) {
+            if (args.length && args[0] && typeof args[0] === 'object') {
+                const opcoes = Object.assign({ position: 'center', heightAuto: false, scrollbarPadding: false }, args[0]);
+                opcoes.customClass = Object.assign({}, opcoes.customClass);
+                opcoes.customClass.popup = ('font-sans ' + (opcoes.customClass.popup || '')).trim();
+                const didOpenOriginal = opcoes.didOpen;
+                const didCloseOriginal = opcoes.didClose;
+                opcoes.didOpen = function (...a) {
+                    ativarAreaVisivel();
+                    if (typeof didOpenOriginal === 'function') return didOpenOriginal.apply(this, a);
+                };
+                opcoes.didClose = function (...a) {
+                    desativarAreaVisivel();
+                    if (typeof didCloseOriginal === 'function') return didCloseOriginal.apply(this, a);
+                };
+                args[0] = opcoes;
+            }
+            return fireOriginal(...args);
+        };
+    })();
+    </script>
+    <style>
+        .swal2-container {
+            position: fixed !important;
+            top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+            padding: 12px !important;
+            overflow-y: auto !important;
+        }
+        .swal2-popup {
+            box-sizing: border-box !important;
+            margin: auto !important;
+            max-width: 100% !important;
+            max-height: calc(100vh - 24px);
+            max-height: calc(100dvh - 24px);
+            overflow-y: auto;
+        }
+        .swal2-title,
+        .swal2-html-container {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .swal2-html-container {
+            max-height: 55vh;
+            max-height: 55dvh;
+            overflow-y: auto;
+        }
+    </style>
+    <!-- Ano vigente: atualiza sozinho a cada ano (nada de "2026" fixo) -->
+    <script>
+    window.ANO_VIGENTE = new Date().getFullYear();
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.js-ano').forEach(function (e) { e.textContent = window.ANO_VIGENTE; });
+    });
+    </script>
     <!-- html2pdf.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -160,20 +252,26 @@
                 display: none !important;
             }
         }
+    
+        /* Cabeçalho do PDF: mesmas medidas do PDF da página carro (brasão 24 mm; títulos 12/10/9/9 pt; linhas de 5,5 mm) */
+        .pdf-document { --mm: 3.7129px; }
+        .cab-pdf-logo-wrap { display: flex; justify-content: center; margin: 0 0 calc(var(--mm) * 4) 0; }
+        .cab-pdf-logo { width: calc(var(--mm) * 24); height: calc(var(--mm) * 24); object-fit: contain; }
+        .cab-pdf-t1, .cab-pdf-t2, .cab-pdf-t3 { font-family: Helvetica, Arial, sans-serif !important; color: #000 !important; text-align: center; text-transform: uppercase !important; margin: 0 !important; line-height: calc(var(--mm) * 5.5) !important; }
+        .cab-pdf-t1 { font-size: calc(var(--mm) * 4.2333) !important; font-weight: bold !important; }
+        .cab-pdf-t2 { font-size: calc(var(--mm) * 3.5278) !important; font-weight: bold !important; }
+        .cab-pdf-t3 { font-size: calc(var(--mm) * 3.175) !important; font-weight: normal !important; }
     </style>
 </head>
 <body class="text-slate-800 antialiased pb-12 relative">
 
     <!-- Header Navigation -->
-    <header class="bg-gray-900 text-white shadow-md">
+    <header class="bg-[#001039] text-white shadow-md">
         <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col items-center justify-center text-center">
             <div class="bg-blue p-1.5 rounded-lg shadow-sm mb-2">
                 <img id="appLogo" class="h-64 object-contain" alt="Logo DGAD Suporte">
             </div>
-            <div>
-                <h1 class="font-bold text-base md:text-lg leading-tight uppercase">TERMO DE INTERDIÇÃO E FIEL DEPOSITÁRIO</h1>
-                <p class="text-xs text-blue-200 uppercase">SISTEMA INTEGRADO - EQUIPE OPERACIONAL</p>
-            </div>
+            
         </div>
     </header>
 
@@ -182,21 +280,20 @@
             
             <div class="space-y-6">
                 <!-- Cabeçalho Oficial -->
-                <header class="text-center border-b-2 border-gray-800 pb-4 mb-6">
+                <header class="font-sans text-gray-800 text-center border-b-2 border-gray-800 pb-4 mb-6">
                     <div class="flex justify-center mb-3">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png/500px-Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png" alt="Brasão do Estado do Rio de Janeiro" class="h-24 w-auto object-contain">
                     </div>
                     <h1 class="text-lg sm:text-xl font-bold uppercase tracking-wide">Governo do Estado do Rio de Janeiro</h1>
-                    <h2 class="text-md sm:text-lg font-semibold uppercase">Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN RJ</h2>
-                    <h3 class="text-sm sm:text-md font-medium text-slate-600 uppercase mt-1">Força-Tarefa de Fiscalização e Desmontagem</h3>
+            <h2 class="text-md sm:text-lg font-semibold uppercase">Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN.RJ</h2>
+            <h3 class="text-sm sm:text-md font-medium text-black-600 uppercase mt-1">Diretoria Geral das Atividades de Desmontagem</h3>
+            <h3 class="text-sm sm:text-md font-medium text-black-600 uppercase mt-1">DIVISÃO DE FISCALIZAÇÃO</h3>
                 </header>
 
                 <!-- Botão de rolagem -->
                 <div class="flex justify-between items-center mb-2 no-print">
                     <span class="text-xs font-bold text-gray-500 uppercase tracking-wider"></span>
-                    <button type="button" onclick="window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })" class="btn-scroll-dir anim-bounce" title="Rolar até o final">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-                    </button>
+                
                 </div>
 
                 <!-- Card 1: Identificação das Partes e Estabelecimento -->
@@ -209,12 +306,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nome do Agente Fiscalizador *</label>
-                            <input type="text" id="inputNomeAgente" placeholder="NOME DO AGENTE DO DETRAN" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                            <input type="text" id="inputNomeAgente" placeholder="NOME DO AGENTE DO DETRAN.RJ" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ID Funcional do Agente *</label>
-                            <input type="text" id="inputIdAgente" placeholder="Nº DA MATRÍCULA / ID" maxlength="9" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ID Funcional do Agente FISCALIZADOR *</label>
+                            <input type="text" inputmode="numeric" autocomplete="off" id="inputIdAgente" placeholder="0000000-0" maxlength="9" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
                         </div>
 
                         <div class="md:col-span-2">
@@ -223,7 +320,7 @@
                         </div>
 
                         <div class="md:col-span-2">
-                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Endereço do Estabelecimento *</label>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Endereço da Empresa / Estabelecimento *</label>
                             <input type="text" id="inputLocalEstabelecimento" placeholder="RUA / AVENIDA, Nº, BAIRRO, CIDADE" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
                         </div>
 
@@ -235,7 +332,7 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">CPF *</label>
-                                <input type="text" id="inputCPFProprietario" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                                <input type="text" inputmode="numeric" autocomplete="off" id="inputCPFProprietario" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">RG</label>
@@ -245,7 +342,7 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Município do Termo</label>
-                            <input type="text" id="inputMunicipio" value="RIO DE JANEIRO" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                            <input type="text" id="inputMunicipio" value="" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
                         </div>
 
                         <div>
@@ -263,7 +360,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Discrimine os itens lacrados sob guarda do depositário *</label>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Discrimine os itens lacrados sob guarda do fiel depositário *</label>
                         <textarea id="inputDescricaoMercadorias" rows="4" placeholder="EX: 15 MOTORES VEICULARES, 08 CAIXAS DE CÂMBIO, DIVERSAS PEÇAS DE LATARIA E SUSPENSÃO LACRADAS NO GALPÃO..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
                     </div>
                 </div>
@@ -282,11 +379,13 @@
                                 <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Agente Público *</label>
                                 <div class="h-24 bg-white border border-slate-200 rounded flex items-center justify-center p-1 mb-2">
                                     <img id="previewSignAgente" class="max-h-full max-w-full hidden object-contain">
-                                    <span id="placeholderSignAgente" class="text-xs text-slate-400 italic">SEM ASSINATURA</span>
+                                    
                                 </div>
                             </div>
-                            <button type="button" onclick="openSignatureModal('Agente', 'Agente Público')" class="w-full py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded">
-                                ASSINAR
+                            <button type="button" onclick="openSignatureModal('Agente', 'Agente Público')"
+                                class="w-full py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded shadow transition flex items-center justify-center space-x-1">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                <span>ASSINAR</span>
                             </button>
                         </div>
 
@@ -296,11 +395,13 @@
                                 <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Proprietário / Fiel Depositário *</label>
                                 <div class="h-24 bg-white border border-slate-200 rounded flex items-center justify-center p-1 mb-2">
                                     <img id="previewSignProprietario" class="max-h-full max-w-full hidden object-contain">
-                                    <span id="placeholderSignProprietario" class="text-xs text-slate-400 italic">SEM ASSINATURA</span>
+                                    
                                 </div>
                             </div>
-                            <button type="button" onclick="openSignatureModal('Proprietario', 'Proprietário do Estabelecimento')" class="w-full py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded">
-                                ASSINAR
+                            <button type="button" onclick="openSignatureModal('Proprietario', 'Proprietário do Estabelecimento')"
+                                class="w-full py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded shadow transition flex items-center justify-center space-x-1">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                <span>ASSINAR</span>
                             </button>
                         </div>
                     </div>
@@ -309,7 +410,7 @@
                 <!-- Botões de Ação -->
                 <div class="flex flex-col sm:flex-row flex-wrap gap-3 justify-end items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 no-print">
                     <button type="button" onclick="confirmClearAllForm()" 
-                        class="w-full sm:w-auto px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 font-semibold rounded-lg text-sm border border-red-200 transition flex items-center justify-center space-x-2">
+                        class="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm border border-red-200 transition flex items-center justify-center space-x-2">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                         <span>LIMPAR PÁGINA</span>
                     </button>
@@ -327,7 +428,7 @@
                     </button>
 
                     <button type="button" onclick="generatePDF(true)" 
-                        class="w-full sm:w-auto px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg text-sm shadow-md transition flex items-center justify-center space-x-2">
+                        class="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm shadow-md transition flex items-center justify-center space-x-2">
                         <i data-lucide="file-check-2" class="w-4 h-4"></i>
                         <span>GERAR PDF</span>
                     </button>
@@ -348,12 +449,13 @@
                                 <div style="text-align: left; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 14px;">
                                     <div style="display: flex; justify-content: center; margin-bottom: 6px;">
                                         <header class="text-center border-b-2 border-gray-800 pb-4 mb-6">
-                                            <div class="flex justify-center mb-3">
-                                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png/500px-Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png" alt="Brasão do Estado do Rio de Janeiro" class="h-24 w-auto object-contain">
+                                            <div class="cab-pdf-logo-wrap">
+                                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png/500px-Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png" alt="Brasão do Estado do Rio de Janeiro" class="cab-pdf-logo">
                                             </div>
-                                            <h2 style="font-size: 12.5px; font-weight: bold; margin: 0; text-transform: uppercase;">Governo do Estado do Rio de Janeiro</h2>
-                                            <h3 style="font-size: 11px; font-weight: bold; margin: 1px 0; text-transform: uppercase;">Secretaria de Estado da Casa Civil</h3>
-                                            <h4 style="font-size: 11px; font-weight: bold; margin: 1px 0; text-transform: uppercase;">Departamento de Trânsito do Estado do Rio de Janeiro</h4>
+                                            <h1 class="cab-pdf-t1">Governo do Estado do Rio de Janeiro</h1>
+                                            <h2 class="cab-pdf-t2">Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN.RJ</h2>
+                                            <h3 class="cab-pdf-t3">Diretoria Geral das Atividades de Desmontagem</h3>
+                                            <h3 class="cab-pdf-t3">DIVISÃO DE FISCALIZAÇÃO</h3>
                                             <h1 style="font-size: 12.5px; font-weight: bold; margin-top: 8px; text-transform: uppercase; text-decoration: underline;">
                                                 TERMO DE INTERDIÇÃO E DESIGNAÇÃO COMO FIEL DEPOSITÁRIO
                                             </h1>
@@ -363,7 +465,7 @@
 
                                 <!-- Texto 1: Interdição -->
                                 <p>
-                                    Eu, <strong id="docNomeAgente">________________________________________________</strong>, Id. Funcional <strong id="docIdAgente">________</strong>, representando o Departamento Estadual de Trânsito do Estado do Rio de Janeiro, por meio deste termo, notifico e determino a interdição do estabelecimento comercial localizado em <strong id="docLocalEstabelecimento">________________________________________________</strong>, denominado <strong id="docNomeEstabelecimento">________________________________________________</strong>, em virtude das seguintes razões: "realização de desmontagem de veículo em local não registrado perante o órgão executivo de trânsito competente" - Art. 16 VIII - Lei Federal nº. 12.977 de 20 de maio de 2014.
+                                    Eu, <strong id="docNomeAgente">________________________________________________</strong>, Id. Funcional <strong id="docIdAgente">________</strong>, representando o Departamento Estadual de Trânsito do Estado do Rio de Janeiro, por meio deste termo, <b>notifico e determino a interdição do estabelecimento comercial</b> localizado - <strong id="docLocalEstabelecimento">________________________________________________</strong>, denominado <strong id="docNomeEstabelecimento">________________________________________________</strong>, em virtude das seguintes razões: <b>"realização de desmontagem de veículo em local não registrado perante o órgão executivo de trânsito competente" - Art. 16 VIII - Lei Federal nº. 12.977 de 20 de maio de 2014.</b>
                                 </p>
 
                                 <!-- Texto 2: Designação Fiel Depositário -->
@@ -386,10 +488,10 @@
 
                                 <!-- Implicações Penais -->
                                 <div style="font-weight: bold; font-size: 11px; margin-top: 10px; margin-bottom: 4px;">
-                                    IMPLICAÇÕES PENAIS:
+                                    <b>IMPLICAÇÕES PENAIS:</b>
                                 </div>
                                 <p style="margin-bottom: 8px;">
-                                    1. Legislação Penal: O descumprimento das medidas determinadas neste termo poderá caracterizar crime, sujeitando o infrator à penalidade prevista no artigo Art. 330 do Código Penal Brasileiro. Pena de até 6 (seis) meses de detenção e multa.
+                                    1. <b>Legislação Penal:</b> O descumprimento das medidas determinadas neste termo poderá caracterizar crime, sujeitando o infrator à penalidade prevista no artigo Art. 330 do Código Penal Brasileiro. <b>Pena de até 6 (seis) meses de detenção e multa.</b>
                                 </p>
 
                                 <p>
@@ -398,7 +500,7 @@
 
                                 <!-- Local e Data -->
                                 <div style="margin-top: 14px; margin-bottom: 22px; font-size: 11px; font-weight: bold;">
-                                    Local: <span id="docMunicipio">RIO DE JANEIRO</span>, Data: <span id="docDataTermo">__/__/2026</span>.
+                                    LOCAL: <span id="docMunicipio">RIO DE JANEIRO</span>, DATA: <span id="docDataTermo">__/__/<span class="js-ano">2026</span></span>.
                                 </div>
 
                                 <!-- Assinaturas em 2 Colunas -->
@@ -409,8 +511,8 @@
                                         </div>
                                         <div style="border-top: 1px solid #000; padding-top: 3px;">
                                             <span id="docAssAgenteNome" style="font-weight: bold; font-size: 10px; text-transform: uppercase; display: block;">AGENTE PÚBLICO</span>
-                                            <span style="font-size: 9px; display: block;">Agente Público - DETRAN.RJ</span>
-                                            <span style="font-size: 8px; display: block;">Id. Funcional: <span id="docAssAgenteId">________</span></span>
+                                            <span style="font-size: 9px; display: block;">AGENTE PÚBLICO - DETRAN.RJ</span>
+                                            <span style="font-size: 8px; display: block;">ID FUNCIONAL: <span id="docAssAgenteId">________</span></span>
                                         </div>
                                     </div>
 
@@ -419,14 +521,14 @@
                                             <img id="imgSignProprietario" style="max-height: 38px; max-width: 100%; visibility: hidden;">
                                         </div>
                                         <div style="border-top: 1px solid #000; padding-top: 3px;">
-                                            <span id="docAssPropNome" style="font-weight: bold; font-size: 10px; text-transform: uppercase; display: block;">PROPRIETÁRIO DO ESTABELECIMENTO</span>
-                                            <span style="font-size: 9px; display: block;">Proprietário do Estabelecimento</span>
+                                            <span id="docAssPropNome" style="font-weight: bold; font-size: 10px; text-transform: uppercase; display: block;">PROPRIETÁRIO DA EMPRESA / ESTABELECIMENTO</span>
+                                            <span style="font-size: 9px; display: block;">PROPRIETÁRIO DA EMPRESA / ESTABELECIMENTO</span>
                                             <span style="font-size: 8px; display: block;">CPF: <span id="docAssPropCPF">___.___.___-__</span></span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div style="text-align: right; font-size: 8.5px; font-weight: bold; margin-top: 16px;">Via 1 - DETRAN-RJ</div>
+                                <div style="text-align: right; font-size: 8.5px; font-weight: bold; margin-top: 16px;"></div>
                             </div>
                         </div>
                     </div>
@@ -438,9 +540,6 @@
                 <div class="pdf-history-header">
                     <div class="section-title" style="margin-bottom: 0;">
                         <span>📄 PDF'S GERADOS - INTERDIÇÃO E FIEL DEPOSITÁRIO</span>
-                        <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="btn-scroll-dir anim-bounce no-print" title="Voltar ao topo">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-                        </button>
                     </div>
                     <div class="pdf-search-wrapper" style="margin-top: 8px;">
                         <span class="pdf-search-icon">🔍</span>
@@ -456,22 +555,22 @@
     <div id="signatureModal" class="fixed inset-0 bg-slate-900/70 z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-5 space-y-4">
             <div class="flex items-center justify-between border-b pb-3">
-                <h3 class="font-bold text-slate-800 text-base" id="modalTitle">Assinatura Digital</h3>
+                <h3 class="font-bold text-slate-800 text-base" id="modalTitle">ASSINATURA DIGITAL</h3>
                 <button type="button" onclick="closeSignatureModal()" class="text-slate-400 hover:text-slate-600">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <p class="text-xs text-slate-500">Desenhe a assinatura no quadro abaixo:</p>
+            <p class="text-xs text-slate-500">DESENHE A ASSINATURA NO QUADRO ABAIXO:</p>
             <div class="border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 overflow-hidden relative" style="height: 200px;">
                 <canvas id="modalCanvas" class="w-full h-full bg-white"></canvas>
             </div>
             <div class="flex justify-between items-center pt-2">
                 <button type="button" onclick="clearModalCanvas()" class="px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded border border-red-200">
-                    Limpar Tela
+                    LIMPAR TELA
                 </button>
                 <div class="flex space-x-2">
-                    <button type="button" onclick="closeSignatureModal()" class="px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg text-xs">Cancelar</button>
-                    <button type="button" onclick="saveSignature()" class="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg text-xs">Confirmar</button>
+                    <button type="button" onclick="closeSignatureModal()" class="px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg text-xs">CANCELAR</button>
+                    <button type="button" onclick="saveSignature()" class="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg text-xs">CONFIRMAR</button>
                 </div>
             </div>
         </div>
@@ -512,7 +611,7 @@
             document.getElementById('docRGProprietario').innerText = propRg;
             document.getElementById('docDescricaoMercadorias').innerText = merc;
             document.getElementById('docMunicipio').innerText = munic;
-            document.getElementById('docDataTermo').innerText = dt ? dt.split('-').reverse().join('/') : '__/__/2026';
+            document.getElementById('docDataTermo').innerText = dt ? dt.split('-').reverse().join('/') : '__/__/' + window.ANO_VIGENTE;
 
             document.getElementById('docAssAgenteNome').innerText = agNome !== '________________________________________________' ? agNome : 'AGENTE PÚBLICO';
             document.getElementById('docAssAgenteId').innerText = agId;
@@ -537,7 +636,7 @@
             let v = e.target.value.replace(/\D/g, '').slice(0, 11);
             v = v.replace(/^(\d{3})(\d)/, '$1.$2');
             v = v.replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3');
-            v = v.replace(/\.(\d{3})(\d)/, '.$1-$2');
+            v = v.replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
             e.target.value = v;
             updatePreview();
         });
@@ -638,18 +737,34 @@
             updatePreview();
         }
 
-        function confirmClearAllForm() {
+        function rolarParaTopoAposLimpar() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // correção de segurança caso a rolagem suave seja interrompida pela mudança de layout
+            setTimeout(() => {
+                if (window.pageYOffset > 2) window.scrollTo({ top: 0, behavior: 'auto' });
+            }, 1200);
+        }
+
+                function confirmClearAllForm() {
             Swal.fire({
                 title: 'TEM CERTEZA?',
-                html: "<span class='text-amber-500 font-bold'>ATENÇÃO:</span> ISTO IRÁ <span class='text-red-600 font-bold'>APAGAR</span> TODOS OS DADOS DA TELA!",
+                html: "<span class='text-amber-500 font-bold'>ATENÇÃO:  </span> ISTO IRÁ <span class='text-red-500 font-bold'> 'APAGAR' TODOS OS CAMPOS PREENCHIDOS NA PÁGINA </span>!",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#000000',
                 confirmButtonText: 'OK',
-                cancelButtonText: 'CANCELAR'
+                cancelButtonText: 'CANCELAR',
+                returnFocus: false,
+                didClose: () => {
+                    if (window.foiConfirmadoLimpar) {
+                        window.foiConfirmadoLimpar = false;
+                        setTimeout(() => { rolarParaTopoAposLimpar(); }, 100);
+                    }
+                }
             }).then((res) => {
                 if (res.isConfirmed) {
+                    window.foiConfirmadoLimpar = true;
                     limparTodosOsCampos();
                 }
             });
@@ -671,12 +786,45 @@
             document.querySelectorAll('.campo-invalido').forEach(el => el.classList.remove('campo-invalido'));
         }
 
+        function rolarCampoParaCentro(el, aoTerminar) {
+            if (!el || !el.getBoundingClientRect) {
+                if (aoTerminar) aoTerminar();
+                return;
+            }
+            const rect = el.getBoundingClientRect();
+            const meio = rect.top + window.pageYOffset - (window.innerHeight / 2) + (rect.height / 2);
+            window.scrollTo({ top: Math.max(0, meio), behavior: 'smooth' });
+            if (!aoTerminar) return;
+
+            // aguarda a rolagem suave terminar para só então executar a ação (colocar o cursor)
+            let ultimo = window.pageYOffset, estavel = 0, quadros = 0;
+            const acompanhar = () => {
+                quadros++;
+                const atual = window.pageYOffset;
+                estavel = Math.abs(atual - ultimo) < 1 ? estavel + 1 : 0;
+                ultimo = atual;
+                if (estavel >= 8 || quadros > 90) aoTerminar();
+                else requestAnimationFrame(acompanhar);
+            };
+            requestAnimationFrame(acompanhar);
+        }
+
+        function focarNoCampo(el) {
+            if (!el || !el.focus) return;
+            try { el.focus({ preventScroll: true }); } catch (_) { el.focus(); }
+            try { if (el.select && el.tagName !== 'SELECT') el.select(); } catch (_) {}
+        }
+
+        // Chamada SOMENTE depois que o alerta fechou: rola o campo para o meio da tela e então coloca o cursor
+        function irParaCampoAposAlerta(alvo, campo) {
+            setTimeout(() => {
+                rolarCampoParaCentro(alvo, () => focarNoCampo(campo));
+            }, 120);
+        }
+
         function focarCampoInvalido(el) {
             el.classList.add('campo-invalido');
-            if (typeof el.scrollIntoView === 'function') {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            el.focus();
+            irParaCampoAposAlerta(el, el);
         }
 
         function validateForm() {
@@ -689,25 +837,41 @@
                     Swal.fire({
                         icon: 'warning',
                         title: 'CAMPO OBRIGATÓRIO',
-                        text: `PREENCHA O CAMPO: ${campo.label.toUpperCase()}`
-                    }).then(() => focarCampoInvalido(el));
+                        html: `<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O CAMPO<br><b style="font-size:18px; color:#E53935;">"${campo.label.toUpperCase()}"</b>!`,
+                        returnFocus: false,
+                        didClose: () => focarCampoInvalido(el)
+                    });
                     return false;
                 }
             }
 
             if (!signatures.Agente) {
+                const boxSig = document.getElementById('boxAgente');
+                if (boxSig) boxSig.classList.add('campo-invalido');
                 Swal.fire({
                     icon: 'warning',
                     title: 'ASSINATURA OBRIGATÓRIA',
-                    text: 'A ASSINATURA DO AGENTE PÚBLICO É OBRIGATÓRIA!'
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> A ASSINATURA DO<br><b style="font-size:18px; color:#E53935;">"AGENTE PÚBLICO"</b> É OBRIGATÓRIA!',
+                    returnFocus: false,
+                    didClose: () => {
+                        irParaCampoAposAlerta(boxSig, null);
+                        setTimeout(() => { if (boxSig) boxSig.classList.remove('campo-invalido'); }, 2500);
+                    }
                 });
                 return false;
             }
             if (!signatures.Proprietario) {
+                const boxSig = document.getElementById('boxProprietario');
+                if (boxSig) boxSig.classList.add('campo-invalido');
                 Swal.fire({
                     icon: 'warning',
                     title: 'ASSINATURA OBRIGATÓRIA',
-                    text: 'A ASSINATURA DO FIEL DEPOSITÁRIO É OBRIGATÓRIA!'
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> A ASSINATURA DO<br><b style="font-size:18px; color:#E53935;">"FIEL DEPOSITÁRIO"</b> É OBRIGATÓRIA!',
+                    returnFocus: false,
+                    didClose: () => {
+                        irParaCampoAposAlerta(boxSig, null);
+                        setTimeout(() => { if (boxSig) boxSig.classList.remove('campo-invalido'); }, 2500);
+                    }
                 });
                 return false;
             }
@@ -735,7 +899,7 @@
 
             Swal.fire({
                 title: 'GERANDO PDF...',
-                text: 'Aguarde o processamento...',
+                html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> AGUARDE O PROCESSAMENTO...',
                 allowOutsideClick: false,
                 didOpen: () => Swal.showLoading()
             });
@@ -762,7 +926,7 @@
                 await new Promise(r => setTimeout(r, 200));
                 blob = await html2pdf().set(opt).from(element).outputPdf('blob');
             } catch (err) {
-                console.error("Erro no processamento do PDF:", err);
+                console.error("ERRO NO PROCESSAMENTO DO PDF:", err);
             }
 
             if (!blob) {
@@ -770,7 +934,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'ERRO',
-                    text: 'Falha ao renderizar o documento.'
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> <span class="text-red-500 font-bold">FALHA AO RENDERIZAR O DOCUMENTO</span>.'
                 });
                 return;
             }
@@ -798,7 +962,7 @@
                     downloadLink.remove();
                 }
 
-                limparTodosOsCampos();
+                // limparTodosOsCampos();
 
                 if (compartilhar) {
                     await compartilharPDFGeradoWhatsApp(blob, nomeArquivo);
@@ -807,7 +971,7 @@
                 await Swal.fire({
                     icon: 'success',
                     title: 'SUCESSO',
-                    text: 'TERMO DE INTERDIÇÃO GERADO COM SUCESSO! BAIXE PELO HISTÓRICO ABAIXO QUANDO QUISER.',
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> TERMO DE INTERDIÇÃO GERADO COM SUCESSO!<br>BAIXE PELO <b>HISTÓRICO ABAIXO</b> QUANDO QUISER.',
                     returnFocus: false
                 });
 
@@ -820,7 +984,7 @@
             } catch (err) {
                 console.error(err);
                 Swal.close();
-                Swal.fire('ERRO', 'FALHA AO SALVAR/COMPARTILHAR O PDF.', 'error');
+                Swal.fire({ icon: 'error', title: 'ERRO', html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> <span class="text-red-500 font-bold">FALHA AO SALVAR/COMPARTILHAR O PDF</span>.', confirmButtonColor: '#000000' });
             }
         }
 
@@ -840,13 +1004,13 @@
                     await navigator.share({
                         files: [arquivo],
                         title: nomeArquivo,
-                        text: 'PDF gerado pelo Sistema Integrado DETRAN/RJ.'
+                        text: 'PDF GERADO PELO SISTEMA INTEGRADO DETRAN.RJ!'
                     });
                 } else {
                     await Swal.fire({
                         icon: 'info',
                         title: 'COMPARTILHAMENTO NÃO DISPONÍVEL',
-                        text: 'ESTE NAVEGADOR NÃO SUPORTA COMPARTILHAMENTO DIRETO. BAIXE O PDF PELO HISTÓRICO ABAIXO E ANEXE MANUALMENTE NO WHATSAPP.',
+                        html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> ESTE NAVEGADOR <span class="text-red-500 font-bold">NÃO SUPORTA COMPARTILHAMENTO DIRETO</span>. BAIXE O PDF PELO HISTÓRICO ABAIXO E ANEXE MANUALMENTE NO WHATSAPP.',
                         confirmButtonColor: '#000000',
                         returnFocus: false
                     });
@@ -887,40 +1051,98 @@
                     </div>
                   </div>
                   <div class="pdf-card-actions">
-                    <button class="btn-icon-pdf" onclick="baixarPDFHistorico('${item.id}')" title="Baixar PDF">⬇️</button>
                     <button class="btn-icon-pdf" onclick="abrirPDF('${item.id}')" title="Visualizar">👁️</button>
+                    <button class="btn-icon-pdf" onclick="baixarPDFHistorico('${item.id}')" title="Baixar PDF">⬇️</button>
                     <button class="btn-icon-pdf" onclick="excluirPDF('${item.id}')" title="Excluir">🗑️</button>
                   </div>
                 </div>
             `).join('');
         }
 
+                function avisarDownloadEAtualizar() {
+            Swal.fire({
+                icon: 'success',
+                title: 'DOWNLOAD INICIADO!',
+                html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O PDF ESTÁ SENDO BAIXADO. A PÁGINA SERÁ ATUALIZADA.',
+                timer: 1500,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then(() => { window.location.reload(); });
+        }
+
         function baixarPDFHistorico(id) {
             const h = JSON.parse(localStorage.getItem('historico_pdfs_interdicao')) || [];
             const p = h.find(i => String(i.id) === String(id));
-            if (p?.dataUri) {
+            if (!p || !p.dataUri) return;
+
+            try {
+                const url = URL.createObjectURL(dataUriParaBlob(p.dataUri));
                 const a = document.createElement('a');
-                a.href = p.dataUri;
+                a.href = url;
                 a.download = p.nome || 'TERMO_DE_INTERDICAO.pdf';
                 document.body.appendChild(a);
                 a.click();
-                a.remove();
+                avisarDownloadEAtualizar();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+            } catch (e) {
+                console.error('Erro ao baixar PDF:', e);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ERRO AO BAIXAR PDF',
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> <span class="text-red-500 font-bold">NÃO FOI POSSÍVEL</span> BAIXAR O PDF SALVO.',
+                    confirmButtonColor: '#000000'
+                });
             }
+        }
+
+        function dataUriParaBlob(dataUri) {
+            const partes = dataUri.split(',');
+            const mime = ((partes[0].match(/:(.*?);/) || [])[1]) || 'application/pdf';
+            const bin = atob(partes[1]);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) {
+                bytes[i] = bin.charCodeAt(i);
+            }
+            return new Blob([bytes], { type: mime });
         }
 
         function abrirPDF(id) {
             const h = JSON.parse(localStorage.getItem('historico_pdfs_interdicao')) || [];
             const p = h.find(i => String(i.id) === String(id));
-            if (p?.dataUri) {
-                const w = window.open();
-                w.document.write(`<iframe src="${p.dataUri}" style="border:0;width:100%;height:100%;position:fixed;inset:0"></iframe>`);
+            if (!p || !p.dataUri) return;
+
+            let url;
+            try {
+                url = URL.createObjectURL(dataUriParaBlob(p.dataUri));
+            } catch (e) {
+                console.error('Erro ao preparar PDF:', e);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ERRO AO ABRIR PDF',
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> <span class="text-red-500 font-bold">NÃO FOI POSSÍVEL</span> ABRIR O PDF SALVO.',
+                    confirmButtonColor: '#000000'
+                });
+                return;
+            }
+
+            const win = window.open(url, '_blank');
+            if (!win) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'BLOQUEADOR DE POP-UP DETECTADO',
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PERMITA POP-UPS PARA ABRIR O PDF SALVO.',
+                    confirmButtonColor: '#000000'
+                });
             }
         }
 
         function excluirPDF(id) {
             Swal.fire({
                 title: 'EXCLUIR PDF?',
-                text: 'ATENÇÃO, ESTA AÇÃO NÃO PODERÁ SER DESFEITA.',
+                html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> ESTA AÇÃO <span class="text-red-500 font-bold">NÃO PODERÁ SER DESFEITA </span>.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -936,7 +1158,7 @@
                     Swal.fire({
                         icon: 'success',
                         title: 'EXCLUÍDO!',
-                        text: 'ATENÇÃO, O PDF FOI EXCLUÍDO DO HISTÓRICO.',
+                        html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O PDF FOI EXCLUÍDO DO HISTÓRICO.',
                         timer: 1500,
                         showConfirmButton: false
                     });

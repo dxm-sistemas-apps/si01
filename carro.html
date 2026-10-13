@@ -6,6 +6,89 @@
     <title>ÍTENS DE RASTREABILIDADE (CARRO)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Alertas SweetAlert2 sempre centralizados e totalmente visíveis na parte visível da tela -->
+    <script>
+    (function () {
+        if (typeof Swal === 'undefined') return;
+
+        // Mantém o contêiner do alerta exatamente sobre a área VISÍVEL (considera zoom, barra do navegador e teclado)
+        function ajustarAreaVisivel() {
+            const c = document.querySelector('.swal2-container');
+            const vv = window.visualViewport;
+            if (!c || !vv) return;
+            c.style.setProperty('top', vv.offsetTop + 'px', 'important');
+            c.style.setProperty('left', vv.offsetLeft + 'px', 'important');
+            c.style.setProperty('width', vv.width + 'px', 'important');
+            c.style.setProperty('height', vv.height + 'px', 'important');
+            c.style.setProperty('right', 'auto', 'important');
+            c.style.setProperty('bottom', 'auto', 'important');
+        }
+        function ativarAreaVisivel() {
+            ajustarAreaVisivel();
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', ajustarAreaVisivel);
+                window.visualViewport.addEventListener('scroll', ajustarAreaVisivel);
+            }
+            window.addEventListener('resize', ajustarAreaVisivel);
+        }
+        function desativarAreaVisivel() {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', ajustarAreaVisivel);
+                window.visualViewport.removeEventListener('scroll', ajustarAreaVisivel);
+            }
+            window.removeEventListener('resize', ajustarAreaVisivel);
+        }
+
+        const fireOriginal = Swal.fire.bind(Swal);
+        Swal.fire = function (...args) {
+            if (args.length && args[0] && typeof args[0] === 'object') {
+                const opcoes = Object.assign({ position: 'center', heightAuto: false, scrollbarPadding: false }, args[0]);
+                const didOpenOriginal = opcoes.didOpen;
+                const didCloseOriginal = opcoes.didClose;
+                opcoes.didOpen = function (...a) {
+                    ativarAreaVisivel();
+                    if (typeof didOpenOriginal === 'function') return didOpenOriginal.apply(this, a);
+                };
+                opcoes.didClose = function (...a) {
+                    desativarAreaVisivel();
+                    if (typeof didCloseOriginal === 'function') return didCloseOriginal.apply(this, a);
+                };
+                args[0] = opcoes;
+            }
+            return fireOriginal(...args);
+        };
+    })();
+    </script>
+    <style>
+        .swal2-container {
+            position: fixed !important;
+            top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+            padding: 12px !important;
+            overflow-y: auto !important;
+        }
+        .swal2-popup {
+            box-sizing: border-box !important;
+            margin: auto !important;
+            max-width: 100% !important;
+            max-height: calc(100vh - 24px);
+            max-height: calc(100dvh - 24px);
+            overflow-y: auto;
+        }
+        .swal2-title,
+        .swal2-html-container {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .swal2-html-container {
+            max-height: 55vh;
+            max-height: 55dvh;
+            overflow-y: auto;
+        }
+    </style>
     <style>
         :root {
             --card-bg: #ffffff;
@@ -162,14 +245,14 @@
 <body class="bg-[#f1f5f9] text-gray-800 font-sans min-h-screen antialiased pb-12">
 
     <!-- HEADER PADRONIZADO -->
-    <header class="bg-gray-900 text-white shadow-md">
+    <header class="bg-[#001039] text-white shadow-md">
         <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col items-center justify-center text-center">
             <div class="bg-blue p-1.5 rounded-lg shadow-sm mb-2">
                 <img id="appLogo" class="h-64 object-contain" alt="Logo DGAD Suporte">
             </div>
             <div>
                 <h1 class="font-bold text-base md:text-lg leading-tight uppercase">rastreabilidade de peças de carro</h1>
-                <p class="text-xs text-blue-200 uppercase">sistema integrado - equipe operacional</p>
+                
             </div>
         </div>
     </header>
@@ -181,8 +264,9 @@
                 <img src="https://upload.wikimedia.org/wikipedia/commons/e/e2/Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png" alt="Brasão do Estado do Rio de Janeiro" class="h-24 w-auto object-contain">
             </div>
             <h1 class="text-lg sm:text-xl font-bold uppercase tracking-wide">Governo do Estado do Rio de Janeiro</h1>
-            <h2 class="text-md sm:text-lg font-semibold uppercase">Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN RJ</h2>
+            <h2 class="text-md sm:text-lg font-semibold uppercase">Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN.RJ</h2>
             <h3 class="text-sm sm:text-md font-medium text-black-600 uppercase mt-1">Diretoria Geral das Atividades de Desmontagem</h3>
+            <h3 class="text-sm sm:text-md font-medium text-black-600 uppercase mt-1">DIVISÃO DE FISCALIZAÇÃO</h3>
         </header>
         
         <section class="flex flex-col gap-4 mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -282,10 +366,10 @@
             <div id="bloco-agentes-detran" class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 justify-center">
                 <div class="bloco-assinatura flex flex-col justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg">
                     <div class="mb-3">
-                        <label class="block text-xs font-bold uppercase text-black-500 mb-1">ASSINATURA DIGITAL:</label>
+                        <label class="block text-xs font-bold uppercase text-black-500 mb-1">ASSINATURA DIGITALIZADA:</label>
                         <canvas id="sig-agente1" class="w-full h-72 sm:h-52 bg-white border border-dashed border-gray-400 rounded pointer-events-none"></canvas>
-                        <div class="flex justify-between mt-1">
-                            <button onclick="habilitarAssinatura('sig-agente1')" class="no-print text-xs text-blue-800 font-bold hover:underline">ASSINAR</button>
+                        <div class="flex justify-between items-center mt-2">
+                            <button onclick="habilitarAssinatura('sig-agente1')" class="no-print px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded shadow transition inline-flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>ASSINAR</span></button>
                             <button onclick="clearCanvas('sig-agente1')" class="no-print text-xs text-red-600 font-bold hover:underline">APAGAR ASSINATURA</button>
                         </div>
                     </div>
@@ -293,15 +377,15 @@
                         <label class="block text-xs font-bold uppercase text-black-600 mb-1">ID FUNCIONAL:</label>
                         <input type="text" id="mat-agente1" placeholder="0000000-0" maxlength="9" oninput="aplicarMascaraMatricula(this)" class="w-full p-2 border border-gray-300 rounded text-sm font-mono">
                     </div>
-                    <p class="text-center font-bold text-xs uppercase tracking-wide mt-4 pt-2 border-t border-gray-300 text-black-700">Agente do Detran RJ</p>
+                    <p class="text-center font-bold text-xs uppercase tracking-wide mt-4 pt-2 border-t border-gray-300 text-black-700">Agente do Detran.RJ</p>
                 </div>
 
                 <div class="bloco-assinatura flex flex-col justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg">
                     <div class="mb-3">
-                        <label class="block text-xs font-bold uppercase text-black-500 mb-1">ASSINATURA DIGITAL:</label>
+                        <label class="block text-xs font-bold uppercase text-black-500 mb-1">ASSINATURA DIGITALIZADA:</label>
                         <canvas id="sig-agente2" class="w-full h-72 sm:h-52 bg-white border border-dashed border-gray-400 rounded pointer-events-none"></canvas>
-                        <div class="flex justify-between mt-1">
-                            <button onclick="habilitarAssinatura('sig-agente2')" class="no-print text-xs text-blue-800 font-bold hover:underline">ASSINAR</button>
+                        <div class="flex justify-between items-center mt-2">
+                            <button onclick="habilitarAssinatura('sig-agente2')" class="no-print px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded shadow transition inline-flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>ASSINAR</span></button>
                             <button onclick="clearCanvas('sig-agente2')" class="no-print text-xs text-red-600 font-bold hover:underline">APAGAR ASSINATURA</button>
                         </div>
                     </div>
@@ -309,16 +393,16 @@
                         <label class="block text-xs font-bold uppercase text-black-600 mb-1">ID FUNCIONAL:</label>
                         <input type="text" id="mat-agente2" placeholder="0000000-0" maxlength="9" oninput="aplicarMascaraMatricula(this)" class="w-full p-2 border border-gray-300 rounded text-sm font-mono">
                     </div>
-                    <p class="text-center font-bold text-xs uppercase tracking-wide mt-4 pt-2 border-t border-gray-300 text-black-700">Agente do Detran RJ</p>
+                    <p class="text-center font-bold text-xs uppercase tracking-wide mt-4 pt-2 border-t border-gray-300 text-black-700">Agente do Detran.RJ</p>
                 </div>
             </div>
 
             <div id="bloco-representante-empresa" class="bloco-assinatura w-full md:w-1/2 flex flex-col justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg mx-auto">
                 <div class="mb-3">
-                    <label class="block text-xs font-bold uppercase text-black-500 mb-1">ASSINATURA DIGITAL:</label>
+                    <label class="block text-xs font-bold uppercase text-black-500 mb-1">ASSINATURA DIGITALIZADA:</label>
                     <canvas id="sig-empresa" class="w-full h-72 sm:h-52 bg-white border border-dashed border-gray-400 rounded pointer-events-none"></canvas>
-                    <div class="flex justify-between mt-1">
-                        <button onclick="habilitarAssinatura('sig-empresa')" class="no-print text-xs text-blue-800 font-bold hover:underline">ASSINAR</button>
+                    <div class="flex justify-between items-center mt-2">
+                        <button onclick="habilitarAssinatura('sig-empresa')" class="no-print px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white font-semibold text-xs rounded shadow transition inline-flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>ASSINAR</span></button>
                         <button onclick="clearCanvas('sig-empresa')" class="no-print text-xs text-red-600 font-bold hover:underline">APAGAR ASSINATURA</button>
                     </div>
                 </div>
@@ -337,20 +421,32 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-black-600 mb-1">E-MAIL:</label>
-                        <input type="text" id="e-mail-rep" placeholder="REPRESENTANTE OU EMPRESA" class="w-full p-2 border border-gray-300 rounded text-sm uppercase">
+                        <input type="text" id="e-mail-rep" placeholder="REPRESENTANTE OU EMPRESA / ESTABELECIMENTO" class="w-full p-2 border border-gray-300 rounded text-sm uppercase">
                     </div>
                 </div>
                 <p class="text-center font-bold text-xs uppercase tracking-wide mt-4 pt-2 border-t border-gray-300 text-black-700">Representante da Empresa / ESTABELECIMENTO</p>
             </div>
         </section>
 
-        <div id="barra-acoes" class="no-print mt-8 flex flex-col sm:flex-row justify-end gap-3 border-t border-gray-200 pt-4">
+        <div id="barra-acoes" class="no-print mt-8 flex flex-col sm:flex-row flex-wrap gap-3 justify-end items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
             <button id="btn-processar-agregados" onclick="encerrarContagemAgregados()" class="hidden bg-amber-500 hover:bg-amber-400 text-white font-bold py-2.5 px-8 rounded shadow-md text-sm tracking-wide uppercase transition-all transform hover:scale-[1.01]">
                 ADICIONAR ITENS COMPLETOS
             </button>
-            <button onclick="limparTabela()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded shadow text-sm transition">LIMPAR PÁGINA</button>
-            <button onclick="compartilharPDFWhatsApp()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded shadow text-sm transition">COMPARTILHAR RESUMO (WHATSAPP)</button>
-            <button onclick="gerarPDFPersonalizado()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded shadow text-sm transition">GERAR PDF</button>
+            <button type="button" onclick="limparTabela()"
+                class="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-500 border border-red-200 text-white font-bold rounded-lg text-sm  transition flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                <span>LIMPAR PÁGINA</span>
+            </button>
+            <button type="button" onclick="compartilharPDFWhatsApp()"
+                class="w-full sm:w-auto px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg text-sm shadow-md transition flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                <span>COMPARTILHAR RESUMO (WHATSAPP)</span>
+            </button>
+            <button type="button" onclick="perguntarResumoWhatsAppAntesDoPDF()"
+                class="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm shadow-md transition flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m3 15 2 2 4-4"/></svg>
+                <span>GERAR PDF</span>
+            </button>
         </div>
     </div>
 
@@ -567,7 +663,6 @@ function encerrarContagemAgregados() {
     if (!temDados) {
         const container = document.getElementById('container-agregados');
         if (container) {
-            container.scrollIntoView({ behavior: 'smooth', block: 'center' });
             container.classList.add('ring-4', 'ring-red-600', 'transition-all');
         }
         Swal.fire({
@@ -575,14 +670,11 @@ function encerrarContagemAgregados() {
             title: 'NENHUM ITEM COMPLETO ENCONTRADO!',
             html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> INSIRA O VALOR NO CAMPO DA <span class="text-red-600 font-bold">"CONTAGEM DINÂMICA DE ITENS COMPLETOS"</span> PARA ADICIONÁ-LO À TABELA!',
             confirmButtonColor: '#000000',
+            returnFocus: false,
             didClose: () => {
                 if (container) {
-                    const primeiroInput = container.querySelector('input');
-                    if (primeiroInput) {
-                        primeiroInput.focus();
-                        primeiroInput.select();
-                    }
-                    setTimeout(() => { container.classList.remove('ring-4', 'ring-red-600'); }, 1500);
+                    irParaCampoAposAlerta(container, container.querySelector('input'));
+                    setTimeout(() => { container.classList.remove('ring-4', 'ring-red-600'); }, 2500);
                 }
             }
         });
@@ -741,33 +833,51 @@ function isCanvasEmpty(canvasId) {
     return true;
 }
 
+function rolarCampoParaCentro(el, aoTerminar) {
+    if (!el || !el.getBoundingClientRect) {
+        if (aoTerminar) aoTerminar();
+        return;
+    }
+    const rect = el.getBoundingClientRect();
+    const meio = rect.top + window.pageYOffset - (window.innerHeight / 2) + (rect.height / 2);
+    window.scrollTo({ top: Math.max(0, meio), behavior: 'smooth' });
+    if (!aoTerminar) return;
+
+    // aguarda a rolagem suave terminar para só então executar a ação (colocar o cursor)
+    let ultimo = window.pageYOffset, estavel = 0, quadros = 0;
+    const acompanhar = () => {
+        quadros++;
+        const atual = window.pageYOffset;
+        estavel = Math.abs(atual - ultimo) < 1 ? estavel + 1 : 0;
+        ultimo = atual;
+        if (estavel >= 8 || quadros > 90) aoTerminar();
+        else requestAnimationFrame(acompanhar);
+    };
+    requestAnimationFrame(acompanhar);
+}
+
+function focarNoCampo(el) {
+    if (!el || !el.focus) return;
+    try { el.focus({ preventScroll: true }); } catch (_) { el.focus(); }
+    try { if (el.select && el.tagName !== 'SELECT') el.select(); } catch (_) {}
+}
+
+// Chamada SOMENTE depois que o alerta fechou: rola o campo para o meio da tela e então coloca o cursor
+function irParaCampoAposAlerta(alvo, campo) {
+    setTimeout(() => {
+        rolarCampoParaCentro(alvo, () => focarNoCampo(campo));
+    }, 120);
+}
+
 function mostrarAlertaAviso(titulo, mensagemHTML, elementoParaFocar) {
     let elementoAlvo = elementoParaFocar;
     if (elementoParaFocar) {
         if (elementoParaFocar.tagName === 'INPUT' && elementoParaFocar.closest('tr')) {
             elementoAlvo = elementoParaFocar.closest('tr');
         } else if (elementoParaFocar.tagName === 'CANVAS') {
-            elementoAlvo = elementoParaFocar.closest('.bloco-assinatura');
+            elementoAlvo = elementoParaFocar.closest('.bloco-assinatura') || elementoParaFocar;
         }
-
-        const rolarParaAlvo = () => {
-            const el = elementoAlvo || elementoParaFocar;
-            const elementoRect = el.getBoundingClientRect();
-            const absoluteElementTop = elementoRect.top + window.pageYOffset;
-            const middleOfPosition = absoluteElementTop - (window.innerHeight / 2) + (elementoRect.height / 2);
-            window.scrollTo({ top: Math.max(0, middleOfPosition), behavior: 'smooth' });
-
-            if (elementoAlvo) {
-                elementoAlvo.classList.add('ring-4', 'ring-red-600', 'transition-all', 'duration-300');
-            }
-
-            if (elementoParaFocar.focus) {
-                try { elementoParaFocar.focus({ preventScroll: true }); } catch(_) { elementoParaFocar.focus(); }
-                if (elementoParaFocar.select) elementoParaFocar.select();
-            }
-        };
-
-        rolarParaAlvo();
+        elementoAlvo.classList.add('ring-4', 'ring-red-600', 'transition-all', 'duration-300');
     }
 
     Swal.fire({
@@ -777,22 +887,48 @@ function mostrarAlertaAviso(titulo, mensagemHTML, elementoParaFocar) {
         confirmButtonText: 'OK',
         confirmButtonColor: '#000000',
         customClass: { popup: 'font-sans' },
+        returnFocus: false,
         didClose: () => {
             if (elementoParaFocar) {
-                const el = elementoAlvo || elementoParaFocar;
-                const elementoRect = el.getBoundingClientRect();
-                const absoluteElementTop = elementoRect.top + window.pageYOffset;
-                const middleOfPosition = absoluteElementTop - (window.innerHeight / 2) + (elementoRect.height / 2);
-                window.scrollTo({ top: Math.max(0, middleOfPosition), behavior: 'smooth' });
-
-                if (elementoParaFocar.focus) {
-                    try { elementoParaFocar.focus({ preventScroll: true }); } catch(_) { elementoParaFocar.focus(); }
-                    if (elementoParaFocar.select) elementoParaFocar.select();
-                }
+                irParaCampoAposAlerta(elementoAlvo, elementoParaFocar);
                 setTimeout(() => {
                     if (elementoAlvo) elementoAlvo.classList.remove('ring-4', 'ring-red-600');
-                }, 1200);
+                }, 2500);
             }
+        }
+    });
+}
+
+function perguntarResumoWhatsAppAntesDoPDF() {
+    Swal.fire({
+        icon: 'question',
+        title: 'RESUMO NO WHATSAPP',
+        html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O <b>RESUMO NO WHATSAPP</b> JÁ FOI COMPARTILHADO?',
+        showCancelButton: true,
+        allowOutsideClick: false,
+        confirmButtonColor: '#000000',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'SIM, JÁ FOI',
+        cancelButtonText: 'NÃO, AINDA NÃO'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            gerarPDFPersonalizado();
+            return;
+        }
+        if (result.dismiss === Swal.DismissReason.cancel) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'COMPARTILHE O RESUMO PRIMEIRO',
+                html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O BOTÃO <b>"GERAR PDF"</b> SÓ É LIBERADO APÓS O COMPARTILHAMENTO DO <span class="text-red-500 font-bold">RESUMO NO WHATSAPP</span>!',
+                showCancelButton: true,
+                allowOutsideClick: false,
+                confirmButtonColor: '#16a34a',
+                cancelButtonColor: '#000000',
+                confirmButtonText: 'COMPARTILHAR AGORA',
+                cancelButtonText: 'FECHAR'
+            }).then((r2) => {
+                if (r2.isConfirmed) compartilharPDFWhatsApp();
+            });
         }
     });
 }
@@ -801,19 +937,18 @@ function validarFormulario(acaoSucesso = null) {
     if (verificarDadosPendentesAgregados()) {
         const btnAgregados = document.getElementById('btn-processar-agregados');
         if (btnAgregados) {
-            btnAgregados.scrollIntoView({ behavior: 'smooth', block: 'center' });
             btnAgregados.classList.add('ring-4', 'ring-red-600');
-            btnAgregados.focus();
         }
         Swal.fire({
             icon: 'error',
             title: 'VALORES DE ITENS COMPLETOS NÃO ADICIONADOS À TABELA',
             html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> HÁ VALORES NA <span class="text-red-600 font-bold">"CONTAGEM DINÂMICA DE ITENS COMPLETOS"</span> QUE NÃO FORAM ADICIONADOS À TABELA!<br><br>CLIQUE NO BOTÃO <span class="text-red-600 font-bold">"ADICIONAR ITENS COMPLETOS"</span> PARA PROSSEGUIR!',
             confirmButtonColor: '#000000',
+            returnFocus: false,
             didClose: () => {
                 if (btnAgregados) {
-                    btnAgregados.focus();
-                    setTimeout(() => { btnAgregados.classList.remove('ring-4', 'ring-red-600'); }, 1200);
+                    irParaCampoAposAlerta(btnAgregados, btnAgregados);
+                    setTimeout(() => { btnAgregados.classList.remove('ring-4', 'ring-red-600'); }, 2500);
                 }
             }
         });
@@ -1049,6 +1184,19 @@ function abrirPDF(id) {
     }
 }
 
+function avisarDownloadEAtualizar() {
+    Swal.fire({
+        icon: 'success',
+        title: 'DOWNLOAD INICIADO!',
+        html: '<span class="text-amber-500 font-bold" style="color:#f59e0b;font-weight:bold;">ATENÇÃO:</span> O PDF ESTÁ SENDO BAIXADO. A PÁGINA SERÁ ATUALIZADA.',
+        timer: 1500,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        allowEscapeKey: false
+    }).then(() => { window.location.reload(); });
+}
+
 function baixarPDFHistorico(id) {
     const historico = JSON.parse(localStorage.getItem('historico_pdfs_carro')) || [];
     const pdfObj = historico.find(item => String(item.id) === String(id));
@@ -1067,6 +1215,7 @@ function baixarPDFHistorico(id) {
     link.download = pdfObj.nome || 'rastreabilidade-carro.pdf';
     document.body.appendChild(link);
     link.click();
+    avisarDownloadEAtualizar();
     document.body.removeChild(link);
 }
 
@@ -1172,11 +1321,15 @@ function gerarPDFPersonalizado() {
             pdf.text('GOVERNO DO ESTADO DO RIO DE JANEIRO', pageWidth / 2, y, { align: 'center' });
             y += 5.5;
             pdf.setFontSize(10);
-            pdf.text('DEPARTAMENTO DE TRÂNSITO DO ESTADO DO RIO DE JANEIRO - DETRAN RJ', pageWidth / 2, y, { align: 'center' });
+            pdf.text('DEPARTAMENTO DE TRÂNSITO DO ESTADO DO RIO DE JANEIRO - DETRAN.RJ', pageWidth / 2, y, { align: 'center' });
             y += 5.5;
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(9);
             pdf.text('DIRETORIA GERAL DAS ATIVIDADES DE DESMONTAGEM', pageWidth / 2, y, { align: 'center' });
+            y += 5.5;
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.text('DIVISÃO DE FISCALIZAÇÃO', pageWidth / 2, y, { align: 'center' });
             y += 10;
 
             const drawInfoBox = (x, yPos, w, label, value) => {
@@ -1274,7 +1427,7 @@ function gerarPDFPersonalizado() {
                 pdf.setFontSize(7);
                 pdf.setTextColor(100, 100, 100);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('ASSINATURA DIGITAL:', x + 5, yPos + 6);
+                pdf.text('ASSINATURA DIGITALIZADA:', x + 5, yPos + 6);
                 
                 pdf.setDrawColor(200, 200, 200);
                 pdf.rect(x + 5, yPos + 8, w - 10, 25);
@@ -1329,8 +1482,8 @@ function gerarPDFPersonalizado() {
                 sigY = 20;
             }
 
-            let boxHA = drawSig(14, sigY, sigWidth, 'AGENTE DO DETRAN RJ', 'sig-agente1', [{label: 'ID FUNCIONAL:', value: document.getElementById('mat-agente1').value}]);
-            drawSig(108, sigY, sigWidth, 'AGENTE DO DETRAN RJ', 'sig-agente2', [{label: 'ID FUNCIONAL:', value: document.getElementById('mat-agente2').value}]);
+            let boxHA = drawSig(14, sigY, sigWidth, 'AGENTE DO DETRAN.RJ', 'sig-agente1', [{label: 'ID FUNCIONAL:', value: document.getElementById('mat-agente1').value}]);
+            drawSig(108, sigY, sigWidth, 'AGENTE DO DETRAN.RJ', 'sig-agente2', [{label: 'ID FUNCIONAL:', value: document.getElementById('mat-agente2').value}]);
 
             sigY += boxHA + 8;
 
@@ -1370,18 +1523,18 @@ if (foiCompartilhado) {
         html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O ARQUIVO FOI ADICIONADO AO HISTÓRICO DE PDF´S GERADOS.',
         confirmButtonColor: '#000000'
     }).then(() => {
-        limparTabelaDireto();
+        // limparTabelaDireto();
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     });
 } else {
     Swal.fire({
         icon: 'success',
         title: 'PDF GERADO COM SUCESSO!',
-        html: `<span class="text-amber-500 font-bold">ATENÇÃO:</span> O ARQUIVO FOI ADICIONADO AO HISTÓRICO DE PDF´S GERADOS.
-               <b>PARA FAZER O DOWNLOAD,</b> UTILIZE O BOTÃO "⬇️" NO HISTÓRICO DE PDF´S ABAIXO.`,
+        html: `<span class="text-amber-500 font-bold">ATENÇÃO:</span> O ARQUIVO FOI ADICIONADO AO HISTÓRICO DE PDF´S GERADOS.<br><br>
+               <b>PARA FAZER BAIXAR,</b> UTILIZE O BOTÃO "⬇️" NO HISTÓRICO DE PDF´S ABAIXO.`,
         confirmButtonColor: '#000000'
     }).then(() => {
-        limparTabelaDireto();
+        // limparTabelaDireto();
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     });
 }
@@ -1479,7 +1632,7 @@ function salvarProgresso() {
 function limparTabela() {
     Swal.fire({
         title: 'TEM CERTEZA?',
-        html: "<span class='text-amber-500 font-bold'>ATENÇÃO:  </span> ISTO IRÁ <span class='text-red-500 font-bold'> 'APAGAR' TODOS OS DADOS DA PÁGINA </span>!",
+        html: "<span class='text-amber-500 font-bold'>ATENÇÃO:  </span> ISTO IRÁ <span class='text-red-500 font-bold'> 'APAGAR' TODOS OS CAMPOS PREENCHIDOS NA PÁGINA</span>!",
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -1507,6 +1660,7 @@ function limparTabela() {
                 }
             };
 
+            document.getElementById('info-natureza').value = "";
             document.getElementById('tipo-preenchimento').value = "";
             document.getElementById('container-agregados').classList.add('hidden');
             document.getElementById('btn-processar-agregados').classList.add('hidden');

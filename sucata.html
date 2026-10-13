@@ -6,6 +6,89 @@
   <title>CONTROLE DE SUCATAS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Alertas SweetAlert2 sempre centralizados e totalmente visíveis na parte visível da tela -->
+  <script>
+  (function () {
+      if (typeof Swal === 'undefined') return;
+
+      // Mantém o contêiner do alerta exatamente sobre a área VISÍVEL (considera zoom, barra do navegador e teclado)
+      function ajustarAreaVisivel() {
+          const c = document.querySelector('.swal2-container');
+          const vv = window.visualViewport;
+          if (!c || !vv) return;
+          c.style.setProperty('top', vv.offsetTop + 'px', 'important');
+          c.style.setProperty('left', vv.offsetLeft + 'px', 'important');
+          c.style.setProperty('width', vv.width + 'px', 'important');
+          c.style.setProperty('height', vv.height + 'px', 'important');
+          c.style.setProperty('right', 'auto', 'important');
+          c.style.setProperty('bottom', 'auto', 'important');
+      }
+      function ativarAreaVisivel() {
+          ajustarAreaVisivel();
+          if (window.visualViewport) {
+              window.visualViewport.addEventListener('resize', ajustarAreaVisivel);
+              window.visualViewport.addEventListener('scroll', ajustarAreaVisivel);
+          }
+          window.addEventListener('resize', ajustarAreaVisivel);
+      }
+      function desativarAreaVisivel() {
+          if (window.visualViewport) {
+              window.visualViewport.removeEventListener('resize', ajustarAreaVisivel);
+              window.visualViewport.removeEventListener('scroll', ajustarAreaVisivel);
+          }
+          window.removeEventListener('resize', ajustarAreaVisivel);
+      }
+
+      const fireOriginal = Swal.fire.bind(Swal);
+      Swal.fire = function (...args) {
+          if (args.length && args[0] && typeof args[0] === 'object') {
+              const opcoes = Object.assign({ position: 'center', heightAuto: false, scrollbarPadding: false }, args[0]);
+              const didOpenOriginal = opcoes.didOpen;
+              const didCloseOriginal = opcoes.didClose;
+              opcoes.didOpen = function (...a) {
+                  ativarAreaVisivel();
+                  if (typeof didOpenOriginal === 'function') return didOpenOriginal.apply(this, a);
+              };
+              opcoes.didClose = function (...a) {
+                  desativarAreaVisivel();
+                  if (typeof didCloseOriginal === 'function') return didCloseOriginal.apply(this, a);
+              };
+              args[0] = opcoes;
+          }
+          return fireOriginal(...args);
+      };
+  })();
+  </script>
+  <style>
+      .swal2-container {
+          position: fixed !important;
+          top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          box-sizing: border-box !important;
+          padding: 12px !important;
+          overflow-y: auto !important;
+      }
+      .swal2-popup {
+          box-sizing: border-box !important;
+          margin: auto !important;
+          max-width: 100% !important;
+          max-height: calc(100vh - 24px);
+          max-height: calc(100dvh - 24px);
+          overflow-y: auto;
+      }
+      .swal2-title,
+      .swal2-html-container {
+          overflow-wrap: anywhere;
+          word-break: break-word;
+      }
+      .swal2-html-container {
+          max-height: 55vh;
+          max-height: 55dvh;
+          overflow-y: auto;
+      }
+  </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <style>
@@ -129,10 +212,29 @@
     }
 
     .btn-red { background-color: var(--primary-red); color: white; }
-    .btn-dark { background-color: var(--primary-dark); color: white; }
+    .btn-dark { 
+  background-color: #2563eb; /* bg-blue-600 */
+  color: white; 
+}
+.btn-dark:hover {
+  background-color: #3b82f6; /* hover:bg-blue-500 */
+}
     .btn-outline { background-color: #ffffff; border: 1px solid var(--border-color); color: var(--text-main); }
-    .btn-danger-outline { background-color: #fff; border: 1px solid #fca5a5; color: var(--primary-red); }
-    .btn-green { background-color: #16a34a; color: white; }
+    .btn-danger-outline { 
+  background-color: #dc2626; /* bg-red-600 */
+  color: #ffffff; 
+  border: none;
+}
+.btn-danger-outline:hover {
+  background-color: #ef4444; /* hover:bg-red-500 */
+}
+    .btn-green { 
+  background-color: #16a34a; /* bg-green-600 */
+  color: white; 
+}
+.btn-green:hover {
+  background-color: #22c55e; /* hover:bg-green-500 */
+}
 
     .section-title {
       font-size: 0.8rem;
@@ -540,7 +642,7 @@
 
 <body class="bg-[#f1f5f9] text-gray-800 font-sans min-h-screen antialiased pb-12">
 
-  <header class="bg-gray-900 text-white shadow-md no-print">
+  <header class="bg-[#001039] text-white shadow-md no-print">
       <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col items-center justify-center text-center">
           <div class="bg-blue p-1.5 rounded-lg shadow-sm mb-2">
               <img id="appLogo" class="h-64 object-contain" alt="Logo DGAD">
@@ -552,19 +654,16 @@
       </div>
   </header>
 
-  <div class="mx-auto max-w-2xl bg-white p-4 sm:p-8 mt-0 sm:mt-6 shadow-md rounded-none sm:rounded-lg border border-gray-200 flex flex-col gap-4" id="conteudo-principal">
+  <div id="conteudo-principal" class="max-w-4xl mx-auto bg-white p-2 sm:p-8 mt-0 sm:mt-6 shadow-md rounded-none sm:rounded-lg border border-gray-200">
     
-    <header class="text-center border-b-2 border-gray-800 pb-4 mb-6">
-        <div class="flex justify-center mb-3">
-            <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/e/e2/Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png" 
-              alt="Brasão do Estado do Rio de Janeiro" 
-              class="h-24 w-auto object-contain header-logo"
-              crossorigin="anonymous">
+        <header class="text-center border-b-2 border-gray-800 pb-4 mb-6">
+            <div class="flex justify-center mb-3">
+                <img  src="https://upload.wikimedia.org/wikipedia/commons/e/e2/Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png" alt="Brasão do Estado do Rio de Janeiro" class="h-24 w-auto object-contain">
         </div>
-        <h1 class="text-lg sm:text-xl font-bold uppercase tracking-wide text-gray-900">Governo do Estado do Rio de Janeiro</h1>
-        <h2 class="text-md sm:text-lg font-semibold uppercase text-gray-800">Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN RJ</h2>
-        <h3 class="text-sm sm:text-md font-medium text-gray-600 uppercase mt-1">Diretoria Geral das Atividades de Desmontagem</h3>
+        <h1 class="text-lg sm:text-xl font-bold uppercase tracking-wide">Governo do Estado do Rio de Janeiro</h1>
+            <h2 class="text-md sm:text-lg font-semibold uppercase">Departamento de Trânsito do Estado do Rio de Janeiro - DETRAN.RJ</h2>
+            <h3 class="text-sm sm:text-md font-medium text-black-600 uppercase mt-1">Diretoria Geral das Atividades de Desmontagem</h3>
+            <h3 class="text-sm sm:text-md font-medium text-black-600 uppercase mt-1">DIVISÃO DE FISCALIZAÇÃO</h3>
     </header>
 
     <div class="card">
@@ -586,7 +685,7 @@
       </div>
       <div class="form-group" id="grupo-fase-forca-tarefa" style="display: none;">
         <label for="header-fase-forca-tarefa">FASE DA FORÇA TAREFA: *</label>
-        <input type="text" id="header-fase-forca-tarefa" placeholder="FASE DA FORÇA TAREFA" oninput="this.value = this.value.toUpperCase()">
+        <input type="number" id="header-fase-forca-tarefa" placeholder="FASE DA FORÇA TAREFA" oninput="this.value = this.value.toUpperCase()">
       </div>
       <div class="form-group" id="grupo-estabelecimento" style="display: none;">
         <label for="header-estabelecimento">EMPRESA / ESTABELECIMENTO: *</label>
@@ -666,16 +765,28 @@
       </div>
 
       <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
-        <button id="btn-salvar" class="btn btn-dark" style="width: 120px;" onclick="salvarRegistro()">CADASTRAR SUCATA</button>
+        <button id="btn-salvar" class="btn btn-dark" style="width: 120px;" onclick="salvarRegistro()">REGISTRAR SUCATA</button>
       </div>
     </div>
 
     <div id="items-list" style="display: flex; flex-direction: column; gap: 16px;"></div>
 
-    <div class="no-print mt-2 flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-      <button class="btn btn-danger-outline" onclick="limparTabela()">🗑️ LIMPAR PÁGINA</button>
-      <button class="btn btn-green" onclick="compartilharResumo()">COMPARTILHAR RESUMO (WHATSAPP)</button>
-      <button class="btn btn-dark" onclick="gerarPDFPersonalizado()">📄 GERAR PDF</button>
+    <div id="barra-acoes" class="no-print mt-2 flex flex-col sm:flex-row flex-wrap gap-3 justify-end items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+      <button type="button" onclick="limparTabela()"
+                class="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-500 border border-red-200 text-white font-bold rounded-lg text-sm  transition flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                <span>LIMPAR PÁGINA</span>
+            </button>
+      <button type="button" onclick="compartilharResumo()"
+                class="w-full sm:w-auto px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg text-sm shadow-md transition flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                <span>COMPARTILHAR RESUMO (WHATSAPP)</span>
+            </button>
+      <button type="button" onclick="perguntarResumoWhatsAppAntesDoPDF()"
+                class="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm shadow-md transition flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m3 15 2 2 4-4"/></svg>
+                <span>GERAR PDF</span>
+            </button>
     </div>
 
     <div class="card no-print" id="secao-historico-pdf" style="margin-top: 16px;">
@@ -1591,45 +1702,100 @@
       document.getElementById('lightbox-img').src = '';
     }
 
-    function mostrarAlertaAviso(titulo, mensagemHTML, elementoParaFocar) {
-      let elementoAlvo = elementoParaFocar;
-      if (elementoParaFocar) {
-        const elementoRect = elementoParaFocar.getBoundingClientRect();
-        const absoluteElementTop = elementoRect.top + window.pageYOffset;
-        const middleOfPosition = absoluteElementTop - (window.innerHeight / 2) + (elementoRect.height / 2);
-        
-        window.scrollTo({ top: middleOfPosition, behavior: 'smooth' });
+    function rolarCampoParaCentro(el, aoTerminar) {
+        if (!el || !el.getBoundingClientRect) {
+            if (aoTerminar) aoTerminar();
+            return;
+        }
+        const rect = el.getBoundingClientRect();
+        const meio = rect.top + window.pageYOffset - (window.innerHeight / 2) + (rect.height / 2);
+        window.scrollTo({ top: Math.max(0, meio), behavior: 'smooth' });
+        if (!aoTerminar) return;
 
-        if (elementoAlvo) {
+        // aguarda a rolagem suave terminar para só então executar a ação (colocar o cursor)
+        let ultimo = window.pageYOffset, estavel = 0, quadros = 0;
+        const acompanhar = () => {
+            quadros++;
+            const atual = window.pageYOffset;
+            estavel = Math.abs(atual - ultimo) < 1 ? estavel + 1 : 0;
+            ultimo = atual;
+            if (estavel >= 8 || quadros > 90) aoTerminar();
+            else requestAnimationFrame(acompanhar);
+        };
+        requestAnimationFrame(acompanhar);
+    }
+
+    function focarNoCampo(el) {
+        if (!el || !el.focus) return;
+        try { el.focus({ preventScroll: true }); } catch (_) { el.focus(); }
+        try { if (el.select && el.tagName !== 'SELECT') el.select(); } catch (_) {}
+    }
+
+    // Chamada SOMENTE depois que o alerta fechou: rola o campo para o meio da tela e então coloca o cursor
+    function irParaCampoAposAlerta(alvo, campo) {
+        setTimeout(() => {
+            rolarCampoParaCentro(alvo, () => focarNoCampo(campo));
+        }, 120);
+    }
+
+    function mostrarAlertaAviso(titulo, mensagemHTML, elementoParaFocar) {
+        const elementoAlvo = elementoParaFocar;
+        if (elementoParaFocar) {
             elementoAlvo.style.outline = '4px solid #dc2626';
             elementoAlvo.style.transition = 'outline 0.3s';
         }
 
-        if (elementoParaFocar.focus) {
-          elementoParaFocar.focus({ preventScroll: true });
-          if (elementoParaFocar.select) elementoParaFocar.select();
-        }
-      }
-
-      Swal.fire({
-        icon: 'warning',
-        title: titulo,
-        html: mensagemHTML,
-        confirmButtonText: 'OK',
-        confirmButtonColor: '#000000',
-        customClass: { popup: 'font-sans' },
-        didClose: () => {
-          if (elementoParaFocar) {
-            if (elementoParaFocar.focus) {
-              elementoParaFocar.focus({ preventScroll: true });
-              if (elementoParaFocar.select) elementoParaFocar.select();
+        Swal.fire({
+            icon: 'warning',
+            title: titulo,
+            html: mensagemHTML,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#000000',
+            customClass: { popup: 'font-sans' },
+            returnFocus: false,
+            didClose: () => {
+                if (elementoParaFocar) {
+                    irParaCampoAposAlerta(elementoAlvo, elementoParaFocar);
+                    setTimeout(() => {
+                        if (elementoAlvo) elementoAlvo.style.outline = 'none';
+                    }, 2500);
+                }
             }
-            setTimeout(() => {
-              if (elementoAlvo) elementoAlvo.style.outline = 'none';
-            }, 1200);
-          }
-        }
-      });
+        });
+    }
+    
+    function perguntarResumoWhatsAppAntesDoPDF() {
+        Swal.fire({
+            icon: 'question',
+            title: 'RESUMO NO WHATSAPP',
+            html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O <b>RESUMO NO WHATSAPP</b> JÁ FOI COMPARTILHADO?',
+            showCancelButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: '#000000',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'SIM, JÁ FOI',
+            cancelButtonText: 'NÃO, AINDA NÃO'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                gerarPDFPersonalizado();
+                return;
+            }
+            if (result.dismiss === Swal.DismissReason.cancel) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'COMPARTILHE O RESUMO PRIMEIRO',
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O BOTÃO <b>"GERAR PDF"</b> SÓ É LIBERADO APÓS O COMPARTILHAMENTO DO <span class="text-red-600 font-bold">RESUMO NO WHATSAPP</span>!',
+                    showCancelButton: true,
+                    allowOutsideClick: false,
+                    confirmButtonColor: '#16a34a',
+                    cancelButtonColor: '#000000',
+                    confirmButtonText: 'COMPARTILHAR AGORA',
+                    cancelButtonText: 'FECHAR'
+                }).then((r2) => {
+                    if (r2.isConfirmed) compartilharResumo();
+                });
+            }
+        });
     }
 
     function sortAlphabetically(arr) {
@@ -1903,7 +2069,7 @@
 
     function triggerCameraInput() {
       if (currentImages.length >= 5) {
-        mostrarAlertaAviso('LIMITE DE IMAGENS', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> LIMITE MÁXIMO DE 5 IMAGENS POR SUCATA ATINGIDO!');
+        mostrarAlertaAviso('LIMITE DE IMAGENS', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> LIMITE MÁXIMO DE 5 IMAGENS POR SUCATA ATINGIDO!');
         return;
       }
       document.getElementById('file-camera').click();
@@ -1911,7 +2077,7 @@
 
     function triggerUploadInput() {
       if (currentImages.length >= 5) {
-        mostrarAlertaAviso('LIMITE DE IMAGENS', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> LIMITE MÁXIMO DE 5 IMAGENS POR SUCATA ATINGIDO!');
+        mostrarAlertaAviso('LIMITE DE IMAGENS', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> LIMITE MÁXIMO DE 5 IMAGENS POR SUCATA ATINGIDO!');
         return;
       }
       document.getElementById('file-upload').click();
@@ -1923,7 +2089,7 @@
 
       const remainingSlots = 5 - currentImages.length;
       if (files.length > remainingSlots) {
-        mostrarAlertaAviso('LIMITE DE IMAGENS', `<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> VOCÊ SÓ PODE ADICIONAR NO MÁXIMO <span class="text-red-500 font-bold">${remainingSlots} IMAGENS</span>.`);
+        mostrarAlertaAviso('LIMITE DE IMAGENS', `<span class="text-amber-500 font-bold">ATENÇÃO:</span> VOCÊ SÓ PODE ADICIONAR NO MÁXIMO <span class="text-red-500 font-bold">${remainingSlots} IMAGENS</span>.`);
       }
 
       const filesToProcess = files.slice(0, remainingSlots);
@@ -1935,7 +2101,7 @@
           const img = new Image();
           img.src = e.target.result;
           img.onload = function() {
-            const MAX_DIMENSION = 400; 
+            const MAX_DIMENSION = 800; 
             let width = img.width;
             let height = img.height;
 
@@ -1956,7 +2122,7 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            const base64Resized = canvas.toDataURL('image/jpeg', 0.6);
+            const base64Resized = canvas.toDataURL('image/jpeg', 0.75);
             currentImages.push(base64Resized);
             
             processedCount++;
@@ -2012,7 +2178,23 @@
       });
     }
 
-    function salvarRegistro() {
+    function rolarParaCardNovaSucata() {
+        const card = document.getElementById('form-card');
+        if (!card) return;
+        const alvoTopo = () => Math.max(0, card.getBoundingClientRect().top + window.pageYOffset - 8);
+        // espera o layout terminar de se ajustar (lista re-renderizada, prévias de imagem recolhidas)
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            window.scrollTo({ top: alvoTopo(), behavior: 'smooth' });
+        }));
+        // correção final caso a rolagem suave tenha sido interrompida por mudança de layout
+        setTimeout(() => {
+            if (Math.abs(card.getBoundingClientRect().top - 8) > 6) {
+                window.scrollTo({ top: alvoTopo(), behavior: 'auto' });
+            }
+        }, 700);
+    }
+    
+function salvarRegistro() {
       const elAtividade = document.getElementById('header-atividade');
       const elFase = document.getElementById('header-fase-forca-tarefa');
       const elEstabelecimento = document.getElementById('header-estabelecimento');
@@ -2038,17 +2220,17 @@
       const exibeFase = document.getElementById('grupo-fase-forca-tarefa').style.display !== 'none';
       const exibeEndereco = document.getElementById('grupo-endereco').style.display !== 'none';
 
-      if (!atividade) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> PREENCHA A <span style="color:#dc2626; font-weight:bold;">"NATUREZA DA ATIVIDADE"</span>!', elAtividade); return; }
-      if (document.getElementById('grupo-apoio').style.display !== 'none' && !document.getElementById('header-apoio').value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> PREENCHA O CAMPO <span style="color:#dc2626; font-weight:bold;">"APOIO À"</span>!', document.getElementById('header-apoio')); return; }
-      if (exibeFase && !fase) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> PREENCHA A <span style="color:#dc2626; font-weight:bold;">"FASE DA FORÇA TAREFA"</span>!', elFase); return; }
-      if (!estabelecimento) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> PREENCHA O <span style="color:#dc2626; font-weight:bold;">"EMPRESA / ESTABELECIMENTO"</span>!', elEstabelecimento); return; }
-      if (exibeEndereco && !local) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> PREENCHA O <span style="color:#dc2626; font-weight:bold;">"ENDEREÇO"</span>!', elLocal); return; }
-      if (!dataHeader) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> SELECIONE A <span style="color:#dc2626; font-weight:bold;">"DATA"</span>!', elData); return; }
-      if (!montadoraId) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> SELECIONE A <span style="color:#dc2626; font-weight:bold;">"MONTADORA"</span>!', elMontadora); return; }
-      if (!modeloNome) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> SELECIONE O <span style="color:#dc2626; font-weight:bold;">"MODELO DO VEÍCULO"</span>!', elModeloSelect); return; }
-      if (!corId) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> SELECIONE A <span style="color:#dc2626; font-weight:bold;">"COR"</span>!', elCor); return; }
-      if (hasPlate && !placa) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> INFORME A <span style="color:#dc2626; font-weight:bold;">"IDENTIFICAÇÃO"</span> DO VEÍCULO!', elPlaca); return; }
-      if (currentImages.length === 0) { mostrarAlertaAviso('IMAGENS FALTANDO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> ADICIONE AO MENOS <span style="color:#dc2626; font-weight:bold;">1 IMAGEM</span> DA SUCATA!'); return; }
+      if (!atividade) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA A <span class="text-red-600 font-bold">"NATUREZA DA ATIVIDADE"</span>!', elAtividade); return; }
+      if (document.getElementById('grupo-apoio').style.display !== 'none' && !document.getElementById('header-apoio').value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O CAMPO <span class="text-red-600 font-bold">"APOIO À"</span>!', document.getElementById('header-apoio')); return; }
+      if (exibeFase && !fase) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA A <span class="text-red-600 font-bold">"FASE DA FORÇA TAREFA"</span>!', elFase); return; }
+      if (!estabelecimento) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA A <span class="text-red-600 font-bold">"EMPRESA / ESTABELECIMENTO"</span>!', elEstabelecimento); return; }
+      if (exibeEndereco && !local) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O <span class="text-red-600 font-bold">"ENDEREÇO"</span>!', elLocal); return; }
+      if (!dataHeader) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> SELECIONE A <span class="text-red-600 font-bold">"DATA"</span>!', elData); return; }
+      if (!montadoraId) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> SELECIONE A <span class="text-red-600 font-bold">"MONTADORA"</span>!', elMontadora); return; }
+      if (!modeloNome) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> SELECIONE O <span class="text-red-600 font-bold">"MODELO DO VEÍCULO"</span>!', elModeloSelect); return; }
+      if (!corId) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> SELECIONE A <span class="text-red-600 font-bold">"COR"</span>!', elCor); return; }
+      if (hasPlate && !placa) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> INFORME A <span class="text-red-600 font-bold">"IDENTIFICAÇÃO"</span> DO VEÍCULO!', elPlaca); return; }
+      if (currentImages.length === 0) { mostrarAlertaAviso('IMAGENS FALTANDO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> ADICIONE AO MENOS <span class="text-red-600 font-bold">1 IMAGEM</span> DA SUCATA!', document.getElementById('preview-container').parentElement); return; }
 
       const objMontadora = montadoras.find(m => m.id === montadoraId);
       const objCor = cores.find(c => c.id === corId);
@@ -2077,7 +2259,7 @@
       try {
         localStorage.setItem(STORAGE_KEYS.REGISTROS, JSON.stringify(registros));
       } catch (e) {
-          mostrarAlertaAviso('MEMÓRIA CHEIA', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> O SEU NAVEGADOR ESTÁ SEM ESPAÇO NA MEMÓRIA.');
+          mostrarAlertaAviso('MEMÓRIA CHEIA', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O SEU NAVEGADOR ESTÁ SEM ESPAÇO NA MEMÓRIA.');
           return;
       }
 
@@ -2085,7 +2267,7 @@
       resetFormState();
       loadFormDraft();
       
-      document.getElementById('form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      rolarParaCardNovaSucata();
     }
 
     function editarRegistro(id) {
@@ -2187,7 +2369,7 @@
       }
       Swal.fire({
         title: 'EXCLUIR SUCATA?',
-        text: 'ATENÇÃO, ESTA AÇÃO NÃO PODERÁ SER DESFEITA.',
+        html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> ESTA AÇÃO <span class="text-red-500 font-bold">NÃO PODERÁ SER DESFEITA </span>.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -2204,7 +2386,7 @@
           Swal.fire({
             icon: 'success',
             title: 'EXCLUÍDO!',
-            text: 'ATENÇÃO, O REGISTRO FOI EXCLUÍDO.',
+            html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O REGISTRO FOI EXCLUÍDO.',
             timer: 1500,
             showConfirmButton: false
           });
@@ -2212,18 +2394,34 @@
       });
     }
 
-    function limparTabela() {
+    function rolarParaTopoAposLimpar() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // correção de segurança caso a rolagem suave seja interrompida pela mudança de layout
+        setTimeout(() => {
+            if (window.pageYOffset > 2) window.scrollTo({ top: 0, behavior: 'auto' });
+        }, 1200);
+    }
+
+        function limparTabela() {
       Swal.fire({
         title: 'TEM CERTEZA?',
-        html: "<span style='color:#f59e0b; font-weight:bold;'>ATENÇÃO:  </span> ISTO IRÁ <span style='color:#dc2626; font-weight:bold;'> 'APAGAR' </span> TODOS OS DADOS DA PÁGINA!",
+        html: "<span class='text-amber-500 font-bold'>ATENÇÃO:  </span> ISTO IRÁ <span class='text-red-500 font-bold'> 'APAGAR' TODOS OS CAMPOS PREENCHIDOS NA PÁGINA </span>!",
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#d33',
         cancelButtonColor: '#000000',
         confirmButtonText: 'OK',
-        cancelButtonText: 'CANCELAR'
+        cancelButtonText: 'CANCELAR',
+        returnFocus: false,
+        didClose: () => {
+            if (window.foiConfirmadoLimpar) {
+                window.foiConfirmadoLimpar = false;
+                setTimeout(() => { rolarParaTopoAposLimpar(); }, 100);
+            }
+        }
       }).then((result) => {
         if (result.isConfirmed) {
+            window.foiConfirmadoLimpar = true;
           registros = [];
           localStorage.removeItem(STORAGE_KEYS.REGISTROS);
           renderRegistros();
@@ -2240,7 +2438,6 @@
           resetFormState();
           loadFormDraft();
           
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       });
     }
@@ -2255,18 +2452,18 @@
       const exibeFase = document.getElementById('grupo-fase-forca-tarefa').style.display !== 'none';
       const exibeEndereco = document.getElementById('grupo-endereco').style.display !== 'none';
 
-      if (!elAtividade.value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> PREENCHA A <span style="color:#dc2626; font-weight:bold;">"NATUREZA DA ATIVIDADE"</span>!', elAtividade); return false; }
-      if (document.getElementById('grupo-apoio').style.display !== 'none' && !document.getElementById('header-apoio').value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> PREENCHA O CAMPO <span style="color:#dc2626; font-weight:bold;">"APOIO À"</span>!', document.getElementById('header-apoio')); return false; }
-      if (exibeFase && !elFase.value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> PREENCHA A <span style="color:#dc2626; font-weight:bold;">"FASE DA FORÇA TAREFA"</span>!', elFase); return false; }
-      if (!elEstabelecimento.value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> PREENCHA O <span style="color:#dc2626; font-weight:bold;">"EMPRESA / ESTABELECIMENTO"</span>!', elEstabelecimento); return false; }
-      if (exibeEndereco && !elLocal.value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> PREENCHA O <span style="color:#dc2626; font-weight:bold;">"ENDEREÇO"</span>!', elLocal); return false; }
-      if (!elData.value) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> SELECIONE A <span style="color:#dc2626; font-weight:bold;">"DATA"</span>!', elData); return false; }
+      if (!elAtividade.value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA A <span class="text-red-600 font-bold">"NATUREZA DA ATIVIDADE"</span>!', elAtividade); return false; }
+      if (document.getElementById('grupo-apoio').style.display !== 'none' && !document.getElementById('header-apoio').value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O CAMPO <span class="text-red-600 font-bold">"APOIO À"</span>!', document.getElementById('header-apoio')); return false; }
+      if (exibeFase && !elFase.value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA A <span class="text-red-600 font-bold">"FASE DA FORÇA TAREFA"</span>!', elFase); return false; }
+      if (!elEstabelecimento.value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O <span class="text-red-600 font-bold">"EMPRESA / ESTABELECIMENTO"</span>!', elEstabelecimento); return false; }
+      if (exibeEndereco && !elLocal.value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O <span class="text-red-600 font-bold">"ENDEREÇO"</span>!', elLocal); return false; }
+      if (!elData.value) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> SELECIONE A <span class="text-red-600 font-bold">"DATA"</span>!', elData); return false; }
 
       if (registros.length === 0) {
         Swal.fire({
           icon: 'warning',
           title: 'LISTA VAZIA',
-          text: '<span class="text-amber-500 font-bold">ATENÇÃO:</span>, NÃO HÁ NENHUMA SUCATA REGISTRADA PARA GERAR O PDF.',
+          html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> NÃO HÁ <span class="text-red-500 font-bold">NENHUMA SUCATA REGISTRADA</span> PARA GERAR O PDF.',
           confirmButtonColor: '#000000'
         });
         return false;
@@ -2383,7 +2580,7 @@
 
         Swal.fire({
             title: 'GERANDO PDF...',
-            text: 'AGUARDE A CRIAÇÃO E SALVAMENTO DO ARQUIVO OTIMIZADO.',
+            html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> AGUARDE A CRIAÇÃO E SALVAMENTO DO ARQUIVO.',
             allowOutsideClick: false,
             didOpen: () => { Swal.showLoading(); }
         });
@@ -2417,11 +2614,15 @@
             pdf.text('GOVERNO DO ESTADO DO RIO DE JANEIRO', pageWidth / 2, curY, { align: 'center' });
             curY += 5.5;
             pdf.setFontSize(10);
-            pdf.text('DEPARTAMENTO DE TRÂNSITO DO ESTADO DO RIO DE JANEIRO - DETRAN RJ', pageWidth / 2, curY, { align: 'center' });
+            pdf.text('DEPARTAMENTO DE TRÂNSITO DO ESTADO DO RIO DE JANEIRO - DETRAN.RJ', pageWidth / 2, curY, { align: 'center' });
             curY += 5.5;
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(9);
             pdf.text('DIRETORIA GERAL DAS ATIVIDADES DE DESMONTAGEM', pageWidth / 2, curY, { align: 'center' });
+            curY += 5.5;
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.text('DIVISÃO DE FISCALIZAÇÃO', pageWidth / 2, curY, { align: 'center' });
             curY += 10;
 
             const drawInfoBox = (x, yPos, w, label, value) => {
@@ -2572,7 +2773,7 @@
                 pdf.setLineWidth(0.35);
                 pdf.rect(marginX, cardStartY, cardWidth, finalCardHeight, 'S');
 
-                curY += 4;
+                curY += 2;
             }
 
             const pdfBlob = pdf.output('blob');
@@ -2601,20 +2802,20 @@
               Swal.fire({
                   icon: 'success',
                   title: 'PDF GERADO E COMPARTILHADO!',
-                  text: 'O arquivo foi adicionado ao histórico da página.',
+                  html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O ARQUIVO FOI ADICIONADO AO HISTÓRICO DA PÁGINA.',
                   confirmButtonColor: '#000000'
               }).then(() => {
-                  limparAposGeracao();
+                  // limparAposGeracao();
               });
             } else {
               Swal.fire({
                   icon: 'success',
                   title: 'PDF GERADO COM SUCESSO!',
-                  html: `O ARQUIVO FOI ADICIONADO AO HISTÓRICO DA PÁGINA.<br><br>
-                         <b>PARA BAIXAR:</b> UTILIZE O BOTÃO "⬇️" NO HISTÓRICO DE PDFs ABAIXO.`,
+                  html: `<span class="text-amber-500 font-bold">ATENÇÃO:</span> O ARQUIVO FOI ADICIONADO AO HISTÓRICO DE PDF´S GERADOS.<br><br>
+               <b>PARA FAZER BAIXAR,</b> UTILIZE O BOTÃO "⬇️" NO HISTÓRICO DE PDF´S ABAIXO.`,
                   confirmButtonColor: '#000000'
               }).then(() => {
-                  limparAposGeracao();
+                  // limparAposGeracao();
               });
             }
 
@@ -2623,7 +2824,7 @@
             Swal.fire({
                 icon: 'error',
                 title: 'ERRO AO GERAR PDF',
-                text: 'ATENÇÃO, OCORREU UM PROBLEMA AO GERAR O PDF.',
+                html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> OCORREU UM <span class="text-red-500 font-bold">PROBLEMA AO GERAR O PDF</span>.',
                 confirmButtonColor: '#000000'
             });
         }
@@ -2735,54 +2936,65 @@
     }
 
     async function abrirPDF(id) {
-      const pdfObj = await dbObterPDFPorId(id);
-      if (pdfObj) {
-        try {
-          let blob = pdfObj.blob;
-          if (!blob && pdfObj.dataUri) {
-            const byteString = atob(pdfObj.dataUri.split(',')[1]);
-            const mimeString = pdfObj.dataUri.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i);
-            }
-            blob = new Blob([ab], { type: mimeString || 'application/pdf' });
-          }
+        // Abre a nova aba imediatamente (dentro do clique) para o navegador não bloquear
+        const win = window.open('', '_blank');
+        if (win) {
+            try { win.document.write('<title>PDF</title><p style="font-family:sans-serif;text-align:center;margin-top:40px;">CARREGANDO PDF...</p>'); } catch (_) {}
+        }
 
-          if (blob) {
-            const blobUrl = URL.createObjectURL(blob);
-            const win = window.open(blobUrl, '_blank');
-            if (!win) {
-              window.location.href = blobUrl;
+        const pdfObj = await dbObterPDFPorId(id);
+        let blob = pdfObj ? pdfObj.blob : null;
+
+        try {
+            if (pdfObj && !blob && pdfObj.dataUri) {
+                const byteString = atob(pdfObj.dataUri.split(',')[1]);
+                const mimeString = pdfObj.dataUri.split(',')[0].split(':')[1].split(';')[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                blob = new Blob([ab], { type: mimeString || 'application/pdf' });
+            }
+        } catch (e) {
+            console.error('Erro ao preparar PDF:', e);
+        }
+
+        if (blob) {
+            const blobUrl = URL.createObjectURL(blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' }));
+            if (win) {
+                win.location.href = blobUrl;
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'BLOQUEADOR DE POP-UP DETECTADO',
+                    html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PERMITA POP-UPS PARA ABRIR O PDF SALVO.',
+                    confirmButtonColor: '#000000'
+                });
             }
             return;
-          }
-        } catch (e) {
-          console.error("Erro ao abrir diretamente:", e);
         }
 
-        if (pdfObj.dataUri) {
-          const win = window.open();
-          if (win) {
-            win.document.write(`<iframe src="${pdfObj.dataUri}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-          } else {
-            Swal.fire({
-              icon: 'warning',
-              title: 'BLOQUEADOR DE POP-UP DETECTADO',
-              text: 'ATENÇÃO, PERMITA POP-UPS PARA ABRIR O PDF SALVO.',
-              confirmButtonColor: '#000000'
-            });
-          }
-        }
-      } else {
+        if (win) win.close();
         Swal.fire({
-          icon: 'error',
-          title: 'NÃO ENCONTRADO',
-          text: 'O PDF selecionado não foi encontrado no histórico.',
-          confirmButtonColor: '#000000'
+            icon: 'error',
+            title: 'NÃO ENCONTRADO',
+            html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O PDF SELECIONADO <span class="text-red-500 font-bold">NÃO FOI ENCONTRADO</span> NO HISTÓRICO.',
+            confirmButtonColor: '#000000'
         });
-      }
+    }
+
+        function avisarDownloadEAtualizar() {
+        Swal.fire({
+            icon: 'success',
+            title: 'DOWNLOAD INICIADO!',
+            html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O PDF ESTÁ SENDO BAIXADO. A PÁGINA SERÁ ATUALIZADA.',
+            timer: 1500,
+            timerProgressBar: true,
+            showConfirmButton: false,
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then(() => { window.location.reload(); });
     }
 
     async function baixarPDFHistorico(id) {
@@ -2807,6 +3019,7 @@
         a.download = pdfObj.nome || 'relatorio-sucatas.pdf';
         document.body.appendChild(a);
         a.click();
+        avisarDownloadEAtualizar();
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(a.href), 2000);
       }
@@ -2815,7 +3028,7 @@
     async function excluirPDF(id) {
       Swal.fire({
         title: 'EXCLUIR PDF?',
-        text: 'ATENÇÃO, ESTA AÇÃO NÃO PODERÁ SER DESFEITA.',
+        html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> ESTA AÇÃO <span class="text-red-500 font-bold">NÃO PODERÁ SER DESFEITA </span>.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -2829,7 +3042,7 @@
           Swal.fire({
             icon: 'success',
             title: 'EXCLUÍDO!',
-            text: 'ATENÇÃO, O PDF FOI EXCLUÍDO DO HISTÓRICO.',
+            html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O PDF FOI EXCLUÍDO DO HISTÓRICO.',
             timer: 1500,
             showConfirmButton: false
           });
@@ -2902,7 +3115,7 @@
       const nameInput = document.getElementById('modal-input-name');
       const val = nameInput.value.trim().toUpperCase();
       if (!val) {
-        mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> INFORME O NOME!', nameInput);
+        mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> INFORME O NOME!', nameInput);
         return;
       }
 
@@ -2910,7 +3123,7 @@
         const subSelect = document.getElementById('modal-input-sub');
         const subVal = subSelect.value;
         if (!subVal) {
-          mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span style="color:#f59e0b; font-weight:bold;">ATENÇÃO:</span> SELECIONE UMA MONTADORA PARA O MODELO!', subSelect);
+          mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> SELECIONE UMA MONTADORA PARA O MODELO!', subSelect);
           return;
         }
 
@@ -2969,7 +3182,7 @@
     function deleteOptionItem(id) {
       Swal.fire({
         title: 'EXCLUIR ITEM?',
-        text: 'DESEJA REALMENTE REMOVER ESTE ITEM?',
+        html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> DESEJA REALMENTE <span class="text-red-500 font-bold">REMOVER ESTE ITEM</span>?',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
