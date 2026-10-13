@@ -119,7 +119,8 @@
     document.addEventListener('input', function (e) {
         if (e.target && e.target.dataset && e.target.dataset.processoSei) e.target.value = formatarProcessoSEI(e.target.value);
     }, true);
-    </script>
+    </script>
+
     <!-- html2pdf.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -301,10 +302,7 @@
             <div class="bg-blue p-1.5 rounded-lg shadow-sm mb-2">
                 <img id="appLogo" class="h-64 object-contain" alt="Logo DGAD Suporte">
             </div>
-            <div>
-                <h1 class="font-bold text-base md:text-lg leading-tight uppercase">AUTO DE APREENSÃO DE SUCATA</h1>
-                <p class="text-xs text-blue-200 uppercase">SISTEMA INTEGRADO - EQUIPE OPERACIONAL</p>
-            </div>
+            
         </div>
     </header>
 
@@ -328,9 +326,7 @@
                 <!-- Botão de rolagem -->
                 <div class="flex justify-between items-center mb-2 no-print">
                     <span class="text-xs font-bold text-gray-500 uppercase tracking-wider"></span>
-                    <button type="button" onclick="window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })" class="btn-scroll-dir anim-bounce" title="Rolar até o final">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-                    </button>
+                    
                 </div>
 
                 <!-- Card 1: Identificação do Auto e Empresa -->
@@ -346,7 +342,7 @@
                                 Auto de Apreensão nº *
                             </label>
                             <div class="flex items-center">
-                                <input type="text" id="inputNumAuto" placeholder="0001" 
+                                <input type="number" id="inputNumAuto" placeholder="001" 
                                     class="w-full px-3 py-2 rounded-l-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm">
                                 <span class="bg-slate-100 px-3 py-2 border border-l-0 border-slate-300 rounded-r-lg text-sm font-bold text-slate-600">/<span class="js-ano">2026</span></span>
                             </div>
@@ -358,7 +354,7 @@
                             </label>
                             <div class="flex items-center">
                                 <span class="bg-slate-100 px-3 py-2 border border-r-0 border-slate-300 rounded-l-lg text-sm font-bold text-slate-600">SEI-</span>
-                                <input type="text" inputmode="numeric" autocomplete="off" maxlength="13" data-processo-sei="1" id="inputNumProcesso" placeholder="XXXXXX/XXXXXX"
+                                <input type="number" inputmode="numeric" autocomplete="off" maxlength="13" data-processo-sei="1" id="inputNumProcesso" placeholder="XXXXXX/XXXXXX"
                                     class="w-full px-3 py-2 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm min-w-0">
                                 <span class="bg-slate-100 px-3 py-2 border border-l-0 border-slate-300 rounded-r-lg text-sm font-bold text-slate-600">/<span class="js-ano">2026</span></span>
                             </div>
@@ -376,7 +372,7 @@
                             <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
                                 CNPJ *
                             </label>
-                            <input type="text" id="inputCNPJ" placeholder="00.000.000/0001-00" maxlength="18"
+                            <input type="number" id="inputCNPJ" placeholder="00.000.000/0001-00" maxlength="18"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm">
                         </div>
 
@@ -432,7 +428,7 @@
                             <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
                                 CPF do Representante *
                             </label>
-                            <input type="text" id="inputCPF" placeholder="000.000.000-00" maxlength="14"
+                            <input type="number" id="inputCPF" placeholder="000.000.000-00" maxlength="14"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm">
                         </div>
                     </div>
@@ -466,7 +462,7 @@
                         <div class="flex justify-between items-center mb-2">
                             <label class="block text-xs font-semibold text-slate-700 uppercase">Relação de Bens Apreendidos *</label>
                             <button type="button" onclick="adicionarItemTabela()" class="text-xs bg-blue-50 text-blue-900 hover:bg-blue-100 font-semibold px-2.5 py-1 rounded border border-blue-200">
-                                + Adicionar Item
+                                + ADICIONAR ITEM
                             </button>
                         </div>
                         <div id="itensDinamicosContainer" class="space-y-2"></div>
@@ -476,22 +472,22 @@
                     <div class="space-y-2.5 border-t border-slate-100 pt-4" id="grupoMedidas">
                         <label class="flex items-center space-x-2 cursor-pointer">
                             <input type="checkbox" id="checkCautelar" class="h-4 w-4 text-blue-900 rounded" onchange="updatePreview()">
-                            <span class="text-sm font-semibold text-slate-700">Material Cautelarmente Apreendido</span>
+                            <span class="text-sm font-semibold text-slate-700 uppercase">Material Cautelarmente Apreendido</span>
                         </label>
                         
                         <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
                             <label class="flex items-center space-x-2 cursor-pointer">
                                 <input type="checkbox" id="checkFielDepositario" class="h-4 w-4 text-blue-900 rounded" onchange="updatePreview()">
-                                <span class="text-sm font-semibold text-slate-700">Nomeio:</span>
+                                <span class="text-sm font-semibold text-slate-700 uppercase">Nomeio:</span>
                             </label>
                             <input type="text" id="inputNomeFiel" placeholder="NOME DO FIEL DEPOSITÁRIO" 
                                 class="w-full sm:w-80 px-2 py-1 border border-slate-300 rounded text-xs">
-                            <span class="text-xs text-slate-600 font-semibold">fiel depositário.</span>
+                            <span class="text-xs text-slate-600 font-semibold uppercase">fiel depositário.</span>
                         </div>
 
                         <label class="flex items-center space-x-2 cursor-pointer">
                             <input type="checkbox" id="checkDestruicao" class="h-4 w-4 text-blue-900 rounded" onchange="updatePreview()">
-                            <span class="text-sm font-semibold text-slate-700">Determino a imediata destruição do material apreendido, por reconhecer potencial risco ambiental.</span>
+                            <span class="text-sm font-semibold text-slate-700 uppercase">Determino a imediata destruição do material apreendido, por reconhecer potencial risco ambiental.</span>
                         </label>
                     </div>
                 </div>
@@ -510,10 +506,10 @@
                                 <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Agente Público 1 *</label>
                                 <input type="text" id="inputAgente1" placeholder="NOME DO AGENTE" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-xs mb-2">
                                 <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">ID Funcional *</label>
-                                <input type="text" id="inputIdAgente1" placeholder="0000000-0" maxlength="9" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-xs mb-2">
+                                <input type="number" id="inputIdAgente1" placeholder="0000000-0" maxlength="9" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-xs mb-2">
                                 <div class="h-20 bg-white border border-slate-200 rounded flex items-center justify-center p-1 mb-2">
                                     <img id="previewSignAgente1" class="max-h-full max-w-full hidden object-contain">
-                                    <span id="placeholderSignAgente1" class="text-xs text-slate-400 italic">SEM ASSINATURA</span>
+                                    <span id="placeholderSignAgente1" class="text-xs text-slate-400 italic"></span>
                                 </div>
                             </div>
                             <button type="button" onclick="openSignatureModal('Agente1', 'Agente Público 1')"
@@ -546,10 +542,10 @@
                                 <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Agente Público 2</label>
                                 <input type="text" id="inputAgente2" placeholder="NOME DO AGENTE" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-xs mb-2">
                                 <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">ID Funcional</label>
-                                <input type="text" id="inputIdAgente2" placeholder="0000000-0" maxlength="9" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-xs mb-2">
+                                <input type="number" id="inputIdAgente2" placeholder="0000000-0" maxlength="9" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-xs mb-2">
                                 <div class="h-20 bg-white border border-slate-200 rounded flex items-center justify-center p-1 mb-2">
                                     <img id="previewSignAgente2" class="max-h-full max-w-full hidden object-contain">
-                                    <span id="placeholderSignAgente2" class="text-xs text-slate-400 italic">SEM ASSINATURA</span>
+                                    <span id="placeholderSignAgente2" class="text-xs text-slate-400 itali</span>
                                 </div>
                             </div>
                             <button type="button" onclick="openSignatureModal('Agente2', 'Agente Público 2')"
@@ -712,7 +708,7 @@
                                     </div>
                                 </div>
 
-                                // <div style="text-align: right; font-size: 8.5px; font-weight: bold; margin-top: 16px;">Via 1 - DETRAN-RJ</div>
+                                
                             </div>
                         </div>
                     </div>
@@ -724,9 +720,7 @@
                 <div class="pdf-history-header">
                     <div class="section-title" style="margin-bottom: 0;">
                         <span>📄 PDF'S GERADOS - APREENSÃO DE SUCATA</span>
-                        <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="btn-scroll-dir anim-bounce no-print" title="Voltar ao topo">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-                        </button>
+                        
                     </div>
                     <div class="pdf-search-wrapper" style="margin-top: 8px;">
                         <span class="pdf-search-icon">🔍</span>
