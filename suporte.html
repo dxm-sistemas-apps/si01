@@ -961,22 +961,20 @@
         function renderSignatureUI(roleKey, dataURL) {
             const previewImg = document.getElementById(`previewSign${roleKey}`);
             const placeholder = document.getElementById(`placeholderSign${roleKey}`);
-            previewImg.src = dataURL;
-            previewImg.classList.remove('hidden');
-            placeholder.classList.add('hidden');
+            if (previewImg) { previewImg.src = dataURL; previewImg.classList.remove('hidden'); }
+            if (placeholder) placeholder.classList.add('hidden');
 
             const docImg = document.getElementById(`imgSign${roleKey}`);
-            docImg.src = dataURL;
-            docImg.style.display = 'block';
+            if (docImg) { docImg.src = dataURL; docImg.style.display = 'block'; }
         }
 
         function saveSignature() {
             const dataURL = modalCanvas.toDataURL('image/png');
             signatures[currentTargetRole] = dataURL;
 
-            renderSignatureUI(currentTargetRole, dataURL);
-            clearErrors();
             closeSignatureModal();
+            try { renderSignatureUI(currentTargetRole, dataURL); } catch (e) { console.error(e); }
+            clearErrors();
             saveDataToStorage();
         }
 
@@ -1028,13 +1026,11 @@
             ['Agente1', 'Agente2', 'Representante'].forEach(role => {
                 const previewImg = document.getElementById(`previewSign${role}`);
                 const placeholder = document.getElementById(`placeholderSign${role}`);
-                previewImg.src = '';
-                previewImg.classList.add('hidden');
-                placeholder.classList.remove('hidden');
+                if (previewImg) { previewImg.src = ''; previewImg.classList.add('hidden'); }
+                if (placeholder) placeholder.classList.remove('hidden');
 
                 const docImg = document.getElementById(`imgSign${role}`);
-                docImg.src = '';
-                docImg.style.display = 'none';
+                if (docImg) { docImg.src = ''; docImg.style.display = 'none'; }
             });
 
             localStorage.removeItem(STORAGE_KEY);
