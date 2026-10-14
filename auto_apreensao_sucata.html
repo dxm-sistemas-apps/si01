@@ -47,6 +47,10 @@
         Swal.fire = function (...args) {
             if (args.length && args[0] && typeof args[0] === 'object') {
                 const opcoes = Object.assign({ position: 'center', heightAuto: false, scrollbarPadding: false }, args[0]);
+                // Botões padronizados: EXCLUIR PDF (excluir vermelho / cancelar preto) e CAMPO OBRIGATÓRIO (OK preto)
+                const tituloAlertaPadrao = String(opcoes.title || '').toUpperCase();
+                if (tituloAlertaPadrao.indexOf('EXCLUIR PDF') !== -1) { opcoes.confirmButtonColor = '#ef4444'; opcoes.cancelButtonColor = '#000000'; }
+                if (tituloAlertaPadrao.indexOf('CAMPO OBRIGAT') !== -1) { opcoes.confirmButtonColor = '#000000'; }
                 opcoes.customClass = Object.assign({}, opcoes.customClass);
                 opcoes.customClass.popup = ('font-sans ' + (opcoes.customClass.popup || '')).trim();
                 const didOpenOriginal = opcoes.didOpen;
@@ -293,6 +297,13 @@
         .cab-pdf-t2 { font-size: calc(var(--mm) * 3.5278) !important; font-weight: bold !important; }
         .cab-pdf-t3 { font-size: calc(var(--mm) * 3.175) !important; font-weight: normal !important; }
     </style>
+<style>
+/* Cards e modal de assinatura: todos os caracteres em maiúsculo */
+.bloco-assinatura, .bloco-assinatura *,
+[id^="box"], [id^="box"] *,
+#signatureModal, #signatureModal * { text-transform: uppercase !important; }
+.bloco-assinatura ::placeholder, #signatureModal ::placeholder { text-transform: uppercase !important; }
+</style>
 </head>
 <body class="text-slate-800 antialiased pb-12 relative">
 
@@ -342,7 +353,7 @@
                                 Auto de Apreensão nº *
                             </label>
                             <div class="flex items-center">
-                                <input type="number" id="inputNumAuto" placeholder="001" 
+                                <input data-so-numeros type="text" inputmode="numeric" autocomplete="off" id="inputNumAuto" placeholder="001" 
                                     class="w-full px-3 py-2 rounded-l-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm">
                                 <span class="bg-slate-100 px-3 py-2 border border-l-0 border-slate-300 rounded-r-lg text-sm font-bold text-slate-600">/<span class="js-ano">2026</span></span>
                             </div>
@@ -737,7 +748,7 @@
     <div id="signatureModal" class="fixed inset-0 bg-slate-900/70 z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-5 space-y-4">
             <div class="flex items-center justify-between border-b pb-3">
-                <h3 class="font-bold text-slate-800 text-base" id="modalTitle">Assinatura Digital</h3>
+                <h3 class="font-bold text-slate-800 text-base" id="modalTitle">ASSINATURA DIGITAL</h3>
                 <button type="button" onclick="closeSignatureModal()" class="text-slate-400 hover:text-slate-600">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
@@ -892,7 +903,7 @@
 
         function openSignatureModal(roleKey, roleTitle) {
             currentTargetRole = roleKey;
-            document.getElementById('modalTitle').innerText = `Coletar Assinatura: ${roleTitle}`;
+            document.getElementById('modalTitle').innerText = `COLETAR ASSINATURA: ${roleTitle}`;
             modal.classList.add('modal-active');
             setTimeout(() => {
                 canvas.width = canvas.getBoundingClientRect().width;
@@ -1321,7 +1332,7 @@
                   <div class="pdf-card-info" onclick="abrirPDF('${item.id}')">
                     <span class="pdf-card-icon">📄</span>
                     <div class="pdf-card-text">
-                      <div class="pdf-card-title">${item.empresa || item.nome}</div>
+                      <div class="pdf-card-title" title="${item.nome || ''}">${(item.nome || item.empresa || '').replace(/\.pdf$/i, '')}</div>
                       <div class="pdf-card-meta">GERADO EM: ${item.dataGeracao}</div>
                     </div>
                   </div>
@@ -1441,5 +1452,15 @@
             });
         }
     </script>
+<script>
+/* Campos numéricos: texto + teclado numérico (evita o navegador apagar o valor mascarado) */
+document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t && t.hasAttribute && t.hasAttribute('data-so-numeros')) {
+        var v = t.value.replace(/\D/g, '');
+        if (v !== t.value) t.value = v;
+    }
+});
+</script>
 </body>
 </html>

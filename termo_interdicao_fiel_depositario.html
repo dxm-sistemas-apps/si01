@@ -47,6 +47,10 @@
         Swal.fire = function (...args) {
             if (args.length && args[0] && typeof args[0] === 'object') {
                 const opcoes = Object.assign({ position: 'center', heightAuto: false, scrollbarPadding: false }, args[0]);
+                // Botões padronizados: EXCLUIR PDF (excluir vermelho / cancelar preto) e CAMPO OBRIGATÓRIO (OK preto)
+                const tituloAlertaPadrao = String(opcoes.title || '').toUpperCase();
+                if (tituloAlertaPadrao.indexOf('EXCLUIR PDF') !== -1) { opcoes.confirmButtonColor = '#ef4444'; opcoes.cancelButtonColor = '#000000'; }
+                if (tituloAlertaPadrao.indexOf('CAMPO OBRIGAT') !== -1) { opcoes.confirmButtonColor = '#000000'; }
                 opcoes.customClass = Object.assign({}, opcoes.customClass);
                 opcoes.customClass.popup = ('font-sans ' + (opcoes.customClass.popup || '')).trim();
                 const didOpenOriginal = opcoes.didOpen;
@@ -263,6 +267,13 @@
         .cab-pdf-t2 { font-size: calc(var(--mm) * 3.5278) !important; font-weight: bold !important; }
         .cab-pdf-t3 { font-size: calc(var(--mm) * 3.175) !important; font-weight: normal !important; }
     </style>
+<style>
+/* Cards e modal de assinatura: todos os caracteres em maiúsculo */
+.bloco-assinatura, .bloco-assinatura *,
+[id^="box"], [id^="box"] *,
+#signatureModal, #signatureModal * { text-transform: uppercase !important; }
+.bloco-assinatura ::placeholder, #signatureModal ::placeholder { text-transform: uppercase !important; }
+</style>
 </head>
 <body class="text-slate-800 antialiased pb-12 relative">
 
@@ -656,7 +667,7 @@
 
         function openSignatureModal(roleKey, roleTitle) {
             currentTargetRole = roleKey;
-            document.getElementById('modalTitle').innerText = `Coletar Assinatura: ${roleTitle}`;
+            document.getElementById('modalTitle').innerText = `COLETAR ASSINATURA: ${roleTitle}`;
             modal.classList.add('modal-active');
             setTimeout(() => {
                 canvas.width = canvas.getBoundingClientRect().width;
@@ -1041,7 +1052,7 @@
                   <div class="pdf-card-info" onclick="abrirPDF('${item.id}')">
                     <span class="pdf-card-icon">📄</span>
                     <div class="pdf-card-text">
-                      <div class="pdf-card-title">TERMO DE INTERDIÇÃO E FIEL DEPOSITÁRIO - ${item.empresa || item.nome}</div>
+                      <div class="pdf-card-title" title="${item.nome || ''}">${(item.nome || item.empresa || '').replace(/\.pdf$/i, '')}</div>
                       <div class="pdf-card-meta">GERADO EM: ${item.dataGeracao}</div>
                     </div>
                   </div>

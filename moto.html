@@ -43,6 +43,10 @@
         Swal.fire = function (...args) {
             if (args.length && args[0] && typeof args[0] === 'object') {
                 const opcoes = Object.assign({ position: 'center', heightAuto: false, scrollbarPadding: false }, args[0]);
+                // Botões padronizados: EXCLUIR PDF (excluir vermelho / cancelar preto) e CAMPO OBRIGATÓRIO (OK preto)
+                const tituloAlertaPadrao = String(opcoes.title || '').toUpperCase();
+                if (tituloAlertaPadrao.indexOf('EXCLUIR PDF') !== -1) { opcoes.confirmButtonColor = '#ef4444'; opcoes.cancelButtonColor = '#000000'; }
+                if (tituloAlertaPadrao.indexOf('CAMPO OBRIGAT') !== -1) { opcoes.confirmButtonColor = '#000000'; }
                 const didOpenOriginal = opcoes.didOpen;
                 const didCloseOriginal = opcoes.didClose;
                 opcoes.didOpen = function (...a) {
@@ -221,6 +225,13 @@
             }
         }
     </style>
+<style>
+/* Cards e modal de assinatura: todos os caracteres em maiúsculo */
+.bloco-assinatura, .bloco-assinatura *,
+[id^="box"], [id^="box"] *,
+#signatureModal, #signatureModal * { text-transform: uppercase !important; }
+.bloco-assinatura ::placeholder, #signatureModal ::placeholder { text-transform: uppercase !important; }
+</style>
 </head>
 
 <!-- Scripts Oficiais do jsPDF + plugin AutoTable (para garantir alinhamento perfeito) -->
@@ -271,7 +282,7 @@
             </div>
             <div id="grupo-fase-forca-tarefa" style="display: none;">
                 <label class="block text-xs font-bold uppercase text-black-600 mb-1">Fase da Força Tarefa:</label>
-                <input type="number" id="info-fase-forca-tarefa" placeholder="FASE DA FORÇA TAREFA" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-black focus:outline-none text-sm uppercase">
+                <input data-so-numeros type="text" inputmode="numeric" autocomplete="off" id="info-fase-forca-tarefa" placeholder="FASE DA FORÇA TAREFA" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-black focus:outline-none text-sm uppercase">
             </div>
             <div id="grupo-estabelecimento" style="display: none;">
                 <label class="block text-xs font-bold uppercase text-black-600 mb-1">EMPRESA / Estabelecimento:</label>
@@ -358,7 +369,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-black-600 mb-1">ID FUNCIONAL:</label>
-                        <input type="number" id="mat-agente1" placeholder="0000000-0" maxlength="9" oninput="aplicarMascaraMatricula(this)" class="w-full p-2 border border-gray-300 rounded text-sm font-mono">
+                        <input type="text" inputmode="numeric" autocomplete="off" id="mat-agente1" placeholder="0000000-0" maxlength="9" oninput="aplicarMascaraMatricula(this)" class="w-full p-2 border border-gray-300 rounded text-sm font-mono">
                     </div>
                     <p class="text-center font-bold text-xs uppercase tracking-wide mt-4 pt-2 border-t border-gray-300 text-black-700">Agente do Detran.RJ</p>
                 </div>
@@ -374,7 +385,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-black-600 mb-1">ID FUNCIONAL:</label>
-                        <input type="number" id="mat-agente2" placeholder="0000000-0" maxlength="9" oninput="aplicarMascaraMatricula(this)" class="w-full p-2 border border-gray-300 rounded text-sm font-mono">
+                        <input type="text" inputmode="numeric" autocomplete="off" id="mat-agente2" placeholder="0000000-0" maxlength="9" oninput="aplicarMascaraMatricula(this)" class="w-full p-2 border border-gray-300 rounded text-sm font-mono">
                     </div>
                     <p class="text-center font-bold text-xs uppercase tracking-wide mt-4 pt-2 border-t border-gray-300 text-black-700">Agente do Detran.RJ</p>
                 </div>
@@ -1060,7 +1071,7 @@ function renderizarGridPDFs() {
           <div class="pdf-card-info" onclick="abrirPDF('${item.id}')" title="CLIQUE AQUI PARA ABRIR O PDF">
             <span class="pdf-card-icon">📄</span>
             <div class="pdf-card-text">
-              <div class="pdf-card-title">${item.natureza || ''}${item.fase ? ' - FASE ' + item.fase : ''} - ${item.empresa ? item.empresa + ' - ' : ''} ${item.dataFiscalizacao || ''}</div>
+              <div class="pdf-card-title">${item.natureza || ''}${item.fase ? ' - FASE ' + item.fase : ''} - ${item.empresa ? item.empresa + ' - ' : ''}${item.dataFiscalizacao || (item.dataGeracao || '').split(',')[0]}</div>
               <div class="pdf-card-meta">GERADO EM: ${item.dataGeracao}</div>
             </div>
           </div>
@@ -1213,7 +1224,7 @@ function gerarPDFPersonalizado() {
         
         const isForcaTarefa = normalizarTexto(nomeNatu).includes('FORCA TAREFA');
         const faseFormatada = (isForcaTarefa && nomeFase) ? ` - FASE ${nomeFase.toUpperCase()}` : '';
-        const nomeArquivo = `ITENS DE RASTREABILIDADE DE MOTO - ${nomeNatu.toUpperCase()}${faseFormatada} - ${nomeEstab ? nomeEstab.toUpperCase() + ' - ' : ''} ${dataFileName}.pdf`;
+        const nomeArquivo = `ITENS DE RASTREABILIDADE DE MOTO - ${nomeNatu.toUpperCase()}${faseFormatada} - ${nomeEstab ? nomeEstab.toUpperCase() + ' - ' : ''}${dataFileName}.pdf`;
 
         Swal.fire({
             title: 'GERANDO PDF...',
@@ -1813,6 +1824,16 @@ document.addEventListener('input', (e) => {
 document.querySelectorAll('canvas').forEach(canvas => {
     canvas.addEventListener('touchend', () => { setTimeout(salvarProgresso, 500); });
     window.addEventListener('mouseup', () => { setTimeout(salvarProgresso, 500); });
+});
+</script>
+<script>
+/* Campos numéricos: texto + teclado numérico (evita o navegador apagar o valor mascarado) */
+document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t && t.hasAttribute && t.hasAttribute('data-so-numeros')) {
+        var v = t.value.replace(/\D/g, '');
+        if (v !== t.value) t.value = v;
+    }
 });
 </script>
 </body>

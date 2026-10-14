@@ -43,6 +43,10 @@
       Swal.fire = function (...args) {
           if (args.length && args[0] && typeof args[0] === 'object') {
               const opcoes = Object.assign({ position: 'center', heightAuto: false, scrollbarPadding: false }, args[0]);
+              // Botões padronizados: EXCLUIR PDF (excluir vermelho / cancelar preto) e CAMPO OBRIGATÓRIO (OK preto)
+              const tituloAlertaPadrao = String(opcoes.title || '').toUpperCase();
+              if (tituloAlertaPadrao.indexOf('EXCLUIR PDF') !== -1) { opcoes.confirmButtonColor = '#ef4444'; opcoes.cancelButtonColor = '#000000'; }
+              if (tituloAlertaPadrao.indexOf('CAMPO OBRIGAT') !== -1) { opcoes.confirmButtonColor = '#000000'; }
               const didOpenOriginal = opcoes.didOpen;
               const didCloseOriginal = opcoes.didClose;
               opcoes.didOpen = function (...a) {
@@ -705,7 +709,7 @@
       </div>
       <div class="form-group" id="grupo-fase-forca-tarefa" style="display: none;">
         <label for="header-fase-forca-tarefa">FASE DA FORÇA TAREFA: *</label>
-        <input type="number" id="header-fase-forca-tarefa" placeholder="FASE DA FORÇA TAREFA" class="uppercase">
+        <input data-so-numeros type="text" inputmode="numeric" autocomplete="off" id="header-fase-forca-tarefa" placeholder="FASE DA FORÇA TAREFA" class="uppercase">
       </div>
       <div class="form-group" id="grupo-estabelecimento" style="display: none;">
         <label for="header-estabelecimento">EMPRESA / ESTABELECIMENTO: *</label>
@@ -2469,7 +2473,7 @@
           <div class="pdf-card-info" onclick="abrirPDF('${item.id}')" title="CLIQUE AQUI PARA ABRIR O PDF">
             <span class="pdf-card-icon">📄</span>
             <div class="pdf-card-text">
-              <div class="pdf-card-title" title="${item.nome}">${item.atividade || 'CONTROLE DE CARGAS'}${item.fase ? ' - FASE ' + item.fase : ''}${item.estabelecimento ? ' - ' + item.estabelecimento : ''} - ${item.dataFiscalizacao || ''}</div>
+              <div class="pdf-card-title" title="${item.nome}">${item.atividade || 'CONTROLE DE CARGAS'}${item.fase ? ' - FASE ' + item.fase : ''}${item.estabelecimento ? ' - ' + item.estabelecimento : ''} - ${item.dataFiscalizacao || (item.dataGeracao || '').split(',')[0]}</div>
               <div class="pdf-card-meta">GERADO EM: ${item.dataGeracao}</div>
             </div>
           </div>
@@ -2700,5 +2704,15 @@
       });
     }
   </script>
+<script>
+/* Campos numéricos: texto + teclado numérico (evita o navegador apagar o valor mascarado) */
+document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t && t.hasAttribute && t.hasAttribute('data-so-numeros')) {
+        var v = t.value.replace(/\D/g, '');
+        if (v !== t.value) t.value = v;
+    }
+});
+</script>
 </body>
 </html>
