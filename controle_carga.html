@@ -1489,11 +1489,11 @@
       const exibeFase = document.getElementById('grupo-fase-forca-tarefa').style.display !== 'none';
       const exibeEndereco = document.getElementById('grupo-endereco').style.display !== 'none';
 
-      if (!dataHeader && !editingParcialId) { mostrarAlertaAviso('DATA OBRIGATÓRIA', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> INFORME A <span class="text-red-600 font-bold">"DATA DA OPERAÇÃO / CARGA"</span> ANTES DE CONTINUAR!', elData); return; }
+      if (!dataHeader && !editingParcialId) { mostrarAlertaAviso('DATA OBRIGATÓRIA', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> INFORME A <span class="text-red-600 font-bold">"DATA"</span> ANTES DE CONTINUAR!', elData); return; }
       if (!atividade) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> SELECIONE A <span class="text-red-600 font-bold">"NATUREZA DA ATIVIDADE"</span>!', elAtividade); return; }
       if (document.getElementById('grupo-apoio').style.display !== 'none' && !document.getElementById('header-apoio').value.trim()) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O CAMPO <span class="text-red-600 font-bold">"APOIO À"</span>!', document.getElementById('header-apoio')); return; }
       if (exibeFase && !fase) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA A <span class="text-red-600 font-bold">"FASE DA FORÇA TAREFA"</span>!', elFase); return; }
-      if (!estabelecimento) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O <span class="text-red-600 font-bold">"EMPRESA / ESTABELECIMENTO"</span>!', elEstabelecimento); return; }
+      if (!estabelecimento) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA A <span class="text-red-600 font-bold">"EMPRESA / ESTABELECIMENTO"</span>!', elEstabelecimento); return; }
       if (exibeEndereco && !local) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> PREENCHA O <span class="text-red-600 font-bold">"ENDEREÇO"</span>!', elLocal); return; }
       if (!recId) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> SELECIONE A <span class="text-red-600 font-bold">"RECICLADORA"</span>!', elRecicladora); return; }
       if (!veicId) { mostrarAlertaAviso('CAMPO OBRIGATÓRIO', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> SELECIONE O <span class="text-red-600 font-bold">"TIPO DE VEÍCULO"</span>!', elVeiculo); return; }
