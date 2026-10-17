@@ -1,8 +1,8 @@
 {
   "id": "./index.html",
-  "name": "Sistema Integrado - DETRAN.RJ / DGAD",
-  "short_name": "DGAD",
-  "description": "Sistema integrado da equipe operacional - Diretoria Geral das Atividades de Desmontagem.",
+  "name": "Sistema Integrado - DGAD",
+  "short_name": "SI",
+  "description": "Sistema Integrado da Equipe Operacional - Diretoria Geral das Atividades de Desmontagem.",
   "lang": "pt-BR",
   "start_url": "./index.html",
   "scope": "./",
