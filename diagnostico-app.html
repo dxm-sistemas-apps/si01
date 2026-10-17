@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.webmanifest">
+<title>DIAGNÓSTICO DO APP</title>
+<style>
+  body{font-family:system-ui,Segoe UI,sans-serif;background:#f1f5f9;color:#0f172a;margin:0;padding:16px}
+  main{max-width:720px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px}
+  h1{font-size:16px;text-transform:uppercase;margin:0 0 12px}
+  .l{display:flex;gap:10px;padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;text-transform:uppercase}
+  .l:first-of-type{border-top:0}
+  .i{flex:0 0 22px;font-weight:800}
+  .ok .i{color:#15803d}.no .i{color:#b91c1c}.av .i{color:#b45309}
+  .d{display:block;font-size:11px;color:#475569;margin-top:3px}
+  button{margin-top:14px;background:#000;color:#fff;border:0;border-radius:8px;padding:10px 14px;font-weight:700;text-transform:uppercase;cursor:pointer}
+</style>
+</head>
+<body>
+<main>
+  <h1>Diagnóstico: por que o botão "Instalar app" não aparece</h1>
+  <div id="r"></div>
+  <button onclick="location.reload()">Testar de novo</button>
+</main>
+<script>
+(async function () {
+  var r = document.getElementById('r');
+  function add(est, txt, det) {
+    var d = document.createElement('div'); d.className = 'l ' + est;
+    d.innerHTML = '<span class="i">' + (est === 'ok' ? '✔' : est === 'no' ? '✖' : '!') + '</span><span>' + txt + (det ? '<span class="d">' + det + '</span>' : '') + '</span>';
+    r.appendChild(d);
+  }
+  var ua = navigator.userAgent;
+  add('av', 'Navegador', ua);
+
+  var seguro = location.protocol === 'https:' || location.hostname === 'localhost';
+  add(seguro ? 'ok' : 'no', 'Endereço seguro (https)', seguro ? location.origin : 'O SITE PRECISA SER ABERTO POR https:// (GITHUB PAGES). ABRIR O ARQUIVO DO COMPUTADOR (file://) NÃO INSTALA.');
+
+  var emApp = /FBAN|FBAV|Instagram|Line\/|; wv\)|Telegram|TikTok/i.test(ua);
+  add(emApp ? 'no' : 'ok', 'Navegador completo', emApp ? 'VOCÊ ESTÁ EM UM NAVEGADOR DE DENTRO DE OUTRO APP. ABRA O ENDEREÇO NO CHROME (ANDROID) OU NO SAFARI (IPHONE).' : 'NÃO PARECE SER NAVEGADOR EMBUTIDO');
+
+  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  add(standalone ? 'av' : 'ok', standalone ? 'O app JÁ ESTÁ INSTALADO/ABERTO COMO APP' : 'Aberto no navegador (normal)', standalone ? 'POR ISSO O BOTÃO DE INSTALAR NÃO APARECE.' : '');
+
+  var m = null;
+  try {
+    var resp = await fetch('manifest.webmanifest', { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    m = await resp.json();
+    add('ok', 'manifest.webmanifest encontrado', m.name);
+  } catch (e) { add('no', 'manifest.webmanifest NÃO encontrado', 'ENVIE O ARQUIVO PARA A MESMA PASTA DO INDEX NO GITHUB (' + e.message + ').'); }
+
+  if (m) {
+    var tam = {};
+    for (var i = 0; i < (m.icons || []).length; i++) {
+      var ic = m.icons[i], ok = false;
+      try { ok = (await fetch(ic.src, { cache: 'no-store' })).ok; } catch (_) {}
+      add(ok ? 'ok' : 'no', 'Ícone ' + ic.src, ok ? ic.sizes + ' ' + (ic.purpose || '') : 'ARQUIVO NÃO ENCONTRADO: ENVIE ' + ic.src + ' PARA A MESMA PASTA.');
+    }
+  }
+
+  try {
+    var rs = await fetch('sw.js', { cache: 'no-store' });
+    add(rs.ok ? 'ok' : 'no', 'sw.js encontrado', rs.ok ? '' : 'ENVIE O ARQUIVO sw.js PARA A MESMA PASTA (HTTP ' + rs.status + ').');
+  } catch (e) { add('no', 'sw.js NÃO encontrado', e.message); }
+
+  try {
+    var rp = await fetch('pwa.js', { cache: 'no-store' });
+    add(rp.ok ? 'ok' : 'no', 'pwa.js encontrado', rp.ok ? '' : 'ENVIE O ARQUIVO pwa.js PARA A MESMA PASTA.');
+  } catch (e) { add('no', 'pwa.js NÃO encontrado', e.message); }
+
+  try {
+    var ri = await fetch('index.html', { cache: 'no-store' });
+    var t = await ri.text();
+    var tem = t.indexOf('manifest.webmanifest') !== -1 && t.indexOf('pwa.js') !== -1;
+    add(tem ? 'ok' : 'no', 'index.html publicado é a versão nova', tem ? '' : 'O index.html DO SITE AINDA É O ANTIGO (SEM AS LINHAS DO APP). SUBSTITUA-O PELO NOVO.');
+  } catch (e) { add('no', 'index.html', e.message); }
+
+  if ('serviceWorker' in navigator && seguro) {
+    try {
+      var reg = await navigator.serviceWorker.getRegistration();
+      add(reg ? 'ok' : 'av', reg ? 'Service worker registrado (' + (reg.active ? 'ativo' : 'instalando') + ')' : 'Service worker ainda não registrado', reg ? '' : 'ABRA O index.html UMA VEZ COM INTERNET, ESPERE ALGUNS SEGUNDOS E VOLTE AQUI.');
+    } catch (e) { add('no', 'Service worker', e.message); }
+  } else add('no', 'Este navegador não suporta service worker', 'USE CHROME/EDGE (COMPUTADOR/ANDROID) OU SAFARI (IPHONE).');
+
+  var recebeu = false;
+  window.addEventListener('beforeinstallprompt', function () { recebeu = true; });
+  await new Promise(function (ok) { setTimeout(ok, 3000); });
+  var ios = /iphone|ipad|ipod/i.test(ua);
+  if (ios) add('av', 'iPhone/iPad', 'NÃO EXISTE AVISO AUTOMÁTICO. USE O SAFARI: COMPARTILHAR > ADICIONAR À TELA DE INÍCIO.');
+  else add(recebeu ? 'ok' : 'av', recebeu ? 'O navegador liberou a instalação' : 'O navegador ainda não liberou a instalação', recebeu ? 'USE O BOTÃO "INSTALAR APP" DO SISTEMA.' : 'SE TODOS OS ITENS ACIMA ESTÃO ✔, TENTE: FECHAR E ABRIR O SITE, USAR POR ALGUNS SEGUNDOS, E EVITAR ABA ANÔNIMA. NO CHROME TAMBÉM HÁ O MENU ⋮ > INSTALAR APLICATIVO.');
+})();
+</script>
+</body>
+</html>

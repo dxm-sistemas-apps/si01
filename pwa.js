@@ -50,9 +50,12 @@
             ev.userChoice.then(function () { ev = null; if (botao) { botao.remove(); botao = null; } });
             return;
         }
+        var android = /android/i.test(navigator.userAgent);
         var msg = ios
-            ? 'NO SAFARI, TOQUE EM <b>COMPARTILHAR</b> (QUADRADO COM SETA) E DEPOIS EM <b>ADICIONAR À TELA DE INÍCIO</b>.'
-            : 'NO MENU DO NAVEGADOR (⋮), ESCOLHA <b>INSTALAR APLICATIVO</b> OU <b>ADICIONAR À TELA INICIAL</b>.';
+            ? 'NO SAFARI, TOQUE EM <b>COMPARTILHAR</b> (QUADRADO COM SETA) E DEPOIS EM <b>ADICIONAR À TELA DE INÍCIO</b>. (NO IPHONE, SÓ O SAFARI INSTALA; DENTRO DE OUTROS APPS, ABRA O SITE NO SAFARI.)'
+            : android
+                ? 'NO CHROME, TOQUE NO MENU <b>⋮</b> E ESCOLHA <b>INSTALAR APLICATIVO</b> OU <b>ADICIONAR À TELA INICIAL</b>. SE NÃO APARECER, ABRA ESTE ENDEREÇO DIRETO NO CHROME (E NÃO DENTRO DO WHATSAPP/INSTAGRAM) E USE O SITE POR ALGUNS SEGUNDOS.'
+                : 'NO CHROME OU EDGE, PROCURE O ÍCONE DE INSTALAR NO FINAL DA BARRA DE ENDEREÇOS (OU MENU <b>⋮</b> &gt; <b>INSTALAR</b>). O FIREFOX NO COMPUTADOR NÃO INSTALA APPS.';
         if (window.Swal) {
             Swal.fire({ title: 'INSTALAR O APP', html: '<span class="text-amber-500 font-bold">ATENÇÃO:</span> ' + msg, confirmButtonText: 'OK', confirmButtonColor: '#000000', returnFocus: false });
         } else {
@@ -62,6 +65,6 @@
 
     window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); ev = e; criar(); });
     window.addEventListener('appinstalled', function () { ev = null; if (botao) { botao.remove(); botao = null; } });
-    // iPhone/iPad não disparam o evento: mostra o botão com as instruções
-    if (ios) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', criar); else criar(); }
+    // O botão aparece sempre que o app ainda não está instalado (no iPhone/iPad e quando o navegador não avisa a instalação, mostra as instruções)
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', criar); else criar();
 })();
