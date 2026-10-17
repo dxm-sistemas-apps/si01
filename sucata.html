@@ -3,7 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="DGAD">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <script src="pwa.js" defer></script>
   <title>CONTROLE DE SUCATAS</title>
+  <script src="firebase-config.js"></script>
+  <script src="armazem.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <!-- Alertas SweetAlert2 sempre centralizados e totalmente visíveis na parte visível da tela -->
@@ -772,7 +783,7 @@
 
     <div id="items-list" style="display: flex; flex-direction: column; gap: 16px;"></div>
 
-    <div id="barra-acoes" class="no-print mt-2 flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+    <div id="barra-acoes" class="no-print mt-2 flex flex-col sm:flex-row flex-wrap gap-3 justify-end items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
       <button type="button" onclick="limparTabela()"
                 class="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-500 border border-red-200 text-white font-bold rounded-lg text-sm  transition flex items-center justify-center space-x-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
@@ -829,7 +840,7 @@
     </div>
   </div>
 
-  <script>
+  <script type="text/armazem">
     const LOGO_DGAD_SUPORTE = "sucata.png";
 
     const STORAGE_KEYS = {
@@ -903,98 +914,89 @@
       });
     }
 
+    /* ===== Histórico de PDFs: agora no Armazem (IndexedDB, sem limite de tamanho) ===== */
+    const HIST_KEY = 'historico_pdfs_sucata';
+
+    function lerHistoricoLocal() {
+      try { return JSON.parse(Armazem.ls.getItem(HIST_KEY)) || []; } catch (_) { return []; }
+    }
+
+    function blobDoItemAntigo(item) {
+      if (item && item.blob instanceof Blob) return item.blob;
+      if (item && item.dataUri) return Armazem.dataUriParaBlob(item.dataUri);
+      return null;
+    }
+
+    let migracaoHistorico = null;
+    function migrarHistoricoAntigoParaIndexedDB() {
+      if (migracaoHistorico) return migracaoHistorico;
+      migracaoHistorico = (async () => {
+        // 1) lista antiga guardada no localStorage
+        try {
+          const chaveAntiga = STORAGE_KEYS.HISTORICO_PDFS;
+          const antigos = JSON.parse(Armazem.ls.getItem(chaveAntiga));
+          if (Array.isArray(antigos) && antigos.length) {
+            const existentes = new Set(lerHistoricoLocal().map(i => String(i.id)));
+            for (const item of antigos) {
+              if (existentes.has(String(item.id))) continue;
+              const blob = blobDoItemAntigo(item);
+              if (blob) await Armazem.addPDF(HIST_KEY, item, blob);
+            }
+          }
+          if (antigos !== null) Armazem.ls.removeItem(chaveAntiga);
+        } catch (e) { console.warn('Migração (localStorage):', e); }
+
+        // 2) banco antigo (IndexedDB próprio desta página)
+        try {
+          const db = await openIndexedDB();
+          const todos = await new Promise((res, rej) => {
+            const r = db.transaction(STORE_PDFS, 'readonly').objectStore(STORE_PDFS).getAll();
+            r.onsuccess = () => res(r.result || []);
+            r.onerror = () => rej(r.error);
+          });
+          for (const item of todos) {
+            const blob = blobDoItemAntigo(item);
+            if (!blob) continue;
+            const jaExiste = lerHistoricoLocal().some(i => String(i.id) === String(item.id));
+            const f0 = Armazem.falhas();
+            if (!jaExiste) await Armazem.addPDF(HIST_KEY, item, blob);
+            if (await Armazem.aguardarGravacao(f0)) {
+              await new Promise(res => {
+                const r = db.transaction(STORE_PDFS, 'readwrite').objectStore(STORE_PDFS).delete(item.id);
+                r.onsuccess = r.onerror = () => res();
+              });
+            }
+          }
+        } catch (_) {}
+      })();
+      return migracaoHistorico;
+    }
+
     async function dbSalvarPDF(pdfObj) {
-      try {
-        const db = await openIndexedDB();
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_PDFS, 'readwrite');
-          const store = tx.objectStore(STORE_PDFS);
-          const req = store.put(pdfObj);
-          req.onsuccess = () => resolve(true);
-          req.onerror = () => reject(req.error);
-        });
-      } catch (err) {
-        salvarPDFLocalStorageFallback(pdfObj);
-      }
+      const blob = blobDoItemAntigo(pdfObj);
+      if (!blob) throw new Error('PDF sem conteúdo');
+      await Armazem.addPDF(HIST_KEY, pdfObj, blob);
+      return true;
     }
 
     async function dbObterTodosPDFs() {
-      try {
-        const db = await openIndexedDB();
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_PDFS, 'readonly');
-          const store = tx.objectStore(STORE_PDFS);
-          const req = store.getAll();
-          req.onsuccess = () => resolve(req.result || []);
-          req.onerror = () => reject(req.error);
-        });
-      } catch (err) {
-        return JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORICO_PDFS)) || [];
-      }
+      await migrarHistoricoAntigoParaIndexedDB();
+      return lerHistoricoLocal();
     }
 
     async function dbObterPDFPorId(id) {
-      try {
-        const db = await openIndexedDB();
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_PDFS, 'readonly');
-          const store = tx.objectStore(STORE_PDFS);
-          const req = store.get(String(id));
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-      } catch (err) {
-        const hist = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORICO_PDFS)) || [];
-        return hist.find(item => String(item.id) === String(id));
-      }
+      await migrarHistoricoAntigoParaIndexedDB();
+      const item = lerHistoricoLocal().find(i => String(i.id) === String(id));
+      if (!item) return null;
+      const copia = Object.assign({}, item);
+      copia.blob = await Armazem.blobDe(copia);
+      return copia;
     }
 
     async function dbExcluirPDF(id) {
-      try {
-        const db = await openIndexedDB();
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_PDFS, 'readwrite');
-          const store = tx.objectStore(STORE_PDFS);
-          const req = store.delete(String(id));
-          req.onsuccess = () => resolve(true);
-          req.onerror = () => reject(req.error);
-        });
-      } catch (err) {
-        let hist = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORICO_PDFS)) || [];
-        hist = hist.filter(item => String(item.id) !== String(id));
-        try { localStorage.setItem(STORAGE_KEYS.HISTORICO_PDFS, JSON.stringify(hist)); } catch (_) {}
-      }
-    }
-
-    function salvarPDFLocalStorageFallback(pdfObj) {
-      let historico = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORICO_PDFS)) || [];
-      const itemLeve = { ...pdfObj };
-      delete itemLeve.blob;
-      historico.unshift(itemLeve);
-      while (historico.length > 0) {
-        try {
-          localStorage.setItem(STORAGE_KEYS.HISTORICO_PDFS, JSON.stringify(historico));
-          break;
-        } catch (_) {
-          if (historico.length > 1) {
-            historico.pop();
-          } else {
-            break;
-          }
-        }
-      }
-    }
-
-    async function migrarHistoricoAntigoParaIndexedDB() {
-      try {
-        const antigos = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORICO_PDFS));
-        if (antigos && Array.isArray(antigos) && antigos.length > 0) {
-          for (const item of antigos) {
-            await dbSalvarPDF(item);
-          }
-          localStorage.removeItem(STORAGE_KEYS.HISTORICO_PDFS);
-        }
-      } catch (_) {}
+      const lista = lerHistoricoLocal().filter(i => String(i.id) !== String(id));
+      Armazem.ls.setItem(HIST_KEY, JSON.stringify(lista));
+      return true;
     }
 
     const defaultMontadoras = [
@@ -1612,8 +1614,8 @@
 
     function sincronizarListaComPadrao(chaveStorage, listaPadrao) {
       try {
-        const salvos = JSON.parse(localStorage.getItem(chaveStorage));
-        const excluidos = JSON.parse(localStorage.getItem(STORAGE_KEYS.DELETED_PREFIX + chaveStorage)) || [];
+        const salvos = JSON.parse(Armazem.ls.getItem(chaveStorage));
+        const excluidos = JSON.parse(Armazem.ls.getItem(STORAGE_KEYS.DELETED_PREFIX + chaveStorage)) || [];
         const setExcluidos = new Set(excluidos);
 
         if (salvos && Array.isArray(salvos)) {
@@ -1629,11 +1631,11 @@
             }
           });
           const resultado = Array.from(mapa.values());
-          localStorage.setItem(chaveStorage, JSON.stringify(resultado));
+          Armazem.ls.setItem(chaveStorage, JSON.stringify(resultado));
           return resultado;
         } else {
           const filtrados = listaPadrao.filter(item => !setExcluidos.has(item.id));
-          localStorage.setItem(chaveStorage, JSON.stringify(filtrados));
+          Armazem.ls.setItem(chaveStorage, JSON.stringify(filtrados));
           return filtrados;
         }
       } catch (_) {
@@ -1644,7 +1646,7 @@
     let montadoras = sincronizarListaComPadrao(STORAGE_KEYS.MONTADORAS, defaultMontadoras);
     let modelos = sincronizarListaComPadrao(STORAGE_KEYS.MODELOS, defaultModelos);
     let cores = sincronizarListaComPadrao(STORAGE_KEYS.CORES, defaultCores);
-    let registros = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGISTROS)) || [];
+    let registros = JSON.parse(Armazem.ls.getItem(STORAGE_KEYS.REGISTROS)) || [];
     let currentImages = [];
 
     let activeManagerType = ""; 
@@ -1895,9 +1897,9 @@
       popularModelosDropdown(selectMontadora.value);
 
       try {
-        localStorage.setItem(STORAGE_KEYS.MONTADORAS, JSON.stringify(montadoras));
-        localStorage.setItem(STORAGE_KEYS.MODELOS, JSON.stringify(modelos));
-        localStorage.setItem(STORAGE_KEYS.CORES, JSON.stringify(cores));
+        Armazem.ls.setItem(STORAGE_KEYS.MONTADORAS, JSON.stringify(montadoras));
+        Armazem.ls.setItem(STORAGE_KEYS.MODELOS, JSON.stringify(modelos));
+        Armazem.ls.setItem(STORAGE_KEYS.CORES, JSON.stringify(cores));
       } catch (_) {}
     }
 
@@ -1967,12 +1969,12 @@
         data: document.getElementById('header-data').value
       };
       try {
-        localStorage.setItem(STORAGE_KEYS.HEADER, JSON.stringify(data));
+        Armazem.ls.setItem(STORAGE_KEYS.HEADER, JSON.stringify(data));
       } catch (_) {}
     }
 
     function loadHeaderData() {
-      const saved = localStorage.getItem(STORAGE_KEYS.HEADER);
+      const saved = Armazem.ls.getItem(STORAGE_KEYS.HEADER);
       if (saved) {
         try {
           const data = JSON.parse(saved);
@@ -1998,13 +2000,13 @@
         images: currentImages
       };
       try {
-        localStorage.setItem(STORAGE_KEYS.FORM, JSON.stringify(draft));
+        Armazem.ls.setItem(STORAGE_KEYS.FORM, JSON.stringify(draft));
       } catch (_) {}
     }
 
     function loadFormDraft() {
       if (editingItemId) return;
-      const saved = localStorage.getItem(STORAGE_KEYS.FORM);
+      const saved = Armazem.ls.getItem(STORAGE_KEYS.FORM);
       if (saved) {
         try {
           const draft = JSON.parse(saved);
@@ -2046,7 +2048,7 @@
       togglePlateInput(false);
       currentImages = [];
       renderImagePreviews();
-      localStorage.removeItem(STORAGE_KEYS.FORM);
+      Armazem.ls.removeItem(STORAGE_KEYS.FORM);
     }
 
     function cancelarEdicao() {
@@ -2102,7 +2104,7 @@
           const img = new Image();
           img.src = e.target.result;
           img.onload = function() {
-            const MAX_DIMENSION = 800; 
+            const MAX_DIMENSION = 1600; 
             let width = img.width;
             let height = img.height;
 
@@ -2121,9 +2123,13 @@
             canvas.height = height;
 
             const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
 
-            const base64Resized = canvas.toDataURL('image/jpeg', 0.75);
+            const base64Resized = canvas.toDataURL('image/jpeg', 0.9);
             currentImages.push(base64Resized);
             
             processedCount++;
@@ -2258,7 +2264,7 @@ function salvarRegistro() {
       }
 
       try {
-        localStorage.setItem(STORAGE_KEYS.REGISTROS, JSON.stringify(registros));
+        Armazem.ls.setItem(STORAGE_KEYS.REGISTROS, JSON.stringify(registros));
       } catch (e) {
           mostrarAlertaAviso('MEMÓRIA CHEIA', '<span class="text-amber-500 font-bold">ATENÇÃO:</span> O SEU NAVEGADOR ESTÁ SEM ESPAÇO NA MEMÓRIA.');
           return;
@@ -2381,7 +2387,7 @@ function salvarRegistro() {
         if (result.isConfirmed) {
           registros = registros.filter(r => r.id !== id);
           try {
-            localStorage.setItem(STORAGE_KEYS.REGISTROS, JSON.stringify(registros));
+            Armazem.ls.setItem(STORAGE_KEYS.REGISTROS, JSON.stringify(registros));
           } catch (_) {}
           renderRegistros();
           Swal.fire({
@@ -2424,7 +2430,7 @@ function salvarRegistro() {
         if (result.isConfirmed) {
             window.foiConfirmadoLimpar = true;
           registros = [];
-          localStorage.removeItem(STORAGE_KEYS.REGISTROS);
+          Armazem.ls.removeItem(STORAGE_KEYS.REGISTROS);
           renderRegistros();
 
           document.getElementById('header-atividade').value = '';
@@ -2474,41 +2480,35 @@ function salvarRegistro() {
     }
 
     function obterBrasaoBase64() {
+        const URL_BRASAO = 'https://upload.wikimedia.org/wikipedia/commons/e/e2/Ins%C3%ADgnia_bras%C3%A3o_estilizado_governos_Wilson_Witzel_e_Cl%C3%A1udio_Castro_RJ.png';
         return new Promise((resolve) => {
-            try {
-                const imgNode = document.querySelector('.header-logo');
-                if (imgNode && imgNode.complete && imgNode.naturalWidth > 0) {
-                    const maxDim = 180;
-                    let w = imgNode.naturalWidth;
-                    let h = imgNode.naturalHeight;
-                    if (w > maxDim || h > maxDim) {
-                        if (w > h) {
-                            h = Math.round((h * maxDim) / w);
-                            w = maxDim;
-                        } else {
-                            w = Math.round((w * maxDim) / h);
-                            h = maxDim;
-                        }
-                    }
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                try {
+                    // 600 px de largura (alta resolução) - nítido mesmo ao ampliar o PDF
+                    const maxW = 600;
+                    let w = img.naturalWidth, h = img.naturalHeight;
+                    if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
                     const canvas = document.createElement('canvas');
                     canvas.width = w;
                     canvas.height = h;
                     const ctx = canvas.getContext('2d');
-                    ctx.drawImage(imgNode, 0, 0, w, h);
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, w, h);
                     resolve({ data: canvas.toDataURL('image/png'), format: 'PNG' });
-                } else {
-                    resolve(null);
-                }
-            } catch (e) {
-                resolve(null);
-            }
+                } catch (e) { resolve(null); }
+            };
+            img.onerror = () => resolve(null);
+            img.src = URL_BRASAO;
         });
     }
 
-    function otimizarImagemParaPDF(imgSrc, maxDim = 380, quality = 0.65) {
+    function otimizarImagemParaPDF(imgSrc, maxDim = 1200, quality = 0.92) {
       return new Promise((resolve) => {
         if (!imgSrc) return resolve(null);
-        if (imgSrc.startsWith('data:image/jpeg') && imgSrc.length < 60000) {
+        if (imgSrc.startsWith('data:image/jpeg') && imgSrc.length < 400000) {
           return resolve(imgSrc);
         }
         const img = new Image();
@@ -2531,6 +2531,8 @@ function salvarRegistro() {
           const ctx = canvas.getContext('2d');
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, w, h);
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, w, h);
           resolve(canvas.toDataURL('image/jpeg', quality));
         };
@@ -2541,7 +2543,7 @@ function salvarRegistro() {
 
     function limparAposGeracao() {
       registros = [];
-      localStorage.removeItem(STORAGE_KEYS.REGISTROS);
+      Armazem.ls.removeItem(STORAGE_KEYS.REGISTROS);
       renderRegistros();
       document.getElementById('header-atividade').value = '';
       document.getElementById('header-fase-forca-tarefa').value = '';
@@ -3134,7 +3136,7 @@ function salvarRegistro() {
         } else {
           modelos.push({ id: 'mod_' + Date.now(), nome: val, montadoraId: subVal });
         }
-        localStorage.setItem(STORAGE_KEYS.MODELOS, JSON.stringify(modelos));
+        Armazem.ls.setItem(STORAGE_KEYS.MODELOS, JSON.stringify(modelos));
       } else if (activeManagerType === 'montadoras') {
         if (editingOptionId) {
           const item = montadoras.find(m => m.id === editingOptionId);
@@ -3142,7 +3144,7 @@ function salvarRegistro() {
         } else {
           montadoras.push({ id: 'm_' + Date.now(), nome: val, tipo: 'carro' });
         }
-        localStorage.setItem(STORAGE_KEYS.MONTADORAS, JSON.stringify(montadoras));
+        Armazem.ls.setItem(STORAGE_KEYS.MONTADORAS, JSON.stringify(montadoras));
       } else if (activeManagerType === 'cores') {
         if (editingOptionId) {
           const item = cores.find(c => c.id === editingOptionId);
@@ -3150,7 +3152,7 @@ function salvarRegistro() {
         } else {
           cores.push({ id: 'c_' + Date.now(), nome: val });
         }
-        localStorage.setItem(STORAGE_KEYS.CORES, JSON.stringify(cores));
+        Armazem.ls.setItem(STORAGE_KEYS.CORES, JSON.stringify(cores));
       }
 
       editingOptionId = null;
@@ -3196,23 +3198,23 @@ function salvarRegistro() {
           if (activeManagerType === 'modelos') {
             modelos = modelos.filter(m => m.id !== id);
             storageKey = STORAGE_KEYS.MODELOS;
-            localStorage.setItem(storageKey, JSON.stringify(modelos));
+            Armazem.ls.setItem(storageKey, JSON.stringify(modelos));
           } else if (activeManagerType === 'montadoras') {
             montadoras = montadoras.filter(m => m.id !== id);
             storageKey = STORAGE_KEYS.MONTADORAS;
-            localStorage.setItem(storageKey, JSON.stringify(montadoras));
+            Armazem.ls.setItem(storageKey, JSON.stringify(montadoras));
           } else if (activeManagerType === 'cores') {
             cores = cores.filter(c => c.id !== id);
             storageKey = STORAGE_KEYS.CORES;
-            localStorage.setItem(storageKey, JSON.stringify(cores));
+            Armazem.ls.setItem(storageKey, JSON.stringify(cores));
           }
 
           if (storageKey) {
             const delKey = STORAGE_KEYS.DELETED_PREFIX + storageKey;
-            const excluidos = JSON.parse(localStorage.getItem(delKey)) || [];
+            const excluidos = JSON.parse(Armazem.ls.getItem(delKey)) || [];
             if (!excluidos.includes(id)) {
               excluidos.push(id);
-              localStorage.setItem(delKey, JSON.stringify(excluidos));
+              Armazem.ls.setItem(delKey, JSON.stringify(excluidos));
             }
           }
 
@@ -3231,6 +3233,15 @@ document.addEventListener('input', function (e) {
         if (v !== t.value) t.value = v;
     }
 });
+</script>
+<script>
+(function () {
+    if (window.Armazem) return;
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#fff;color:#b91c1c;font:700 16px sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;text-transform:uppercase');
+    d.textContent = 'ARQUIVO "armazem.js" NÃO ENCONTRADO. COPIE armazem.js, nuvem.js E firebase-config.js PARA A MESMA PASTA DESTA PÁGINA.';
+    document.body.appendChild(d);
+})();
 </script>
 </body>
 </html>

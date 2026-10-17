@@ -3,8 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="DGAD">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <script src="pwa.js" defer></script>
     <title>AUTO DE INFRAÇÃO - DETRAN.RJ</title>
     <!-- Tailwind CSS CDN -->
+    <script src="firebase-config.js"></script>
+    <script src="armazem.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -166,10 +177,10 @@
         .pdf-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted); pointer-events: none; }
         .pdf-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
         .pdf-card { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f9fafb; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 10px 12px; }
-        .pdf-card-info { display: flex; align-items: center; gap: 10px; overflow: hidden; cursor: pointer; }
+        .pdf-card-info { display: flex; align-items: center; gap: 10px; overflow: hidden; cursor: pointer; flex: 1; min-width: 0; }
         .pdf-card-icon { font-size: 1.6rem; flex-shrink: 0; }
-        .pdf-card-text { overflow: hidden; }
-        .pdf-card-title { font-size: 0.8rem; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pdf-card-text { overflow: hidden; min-width: 0; width: 100%; }
+        .pdf-card-title { font-size: 0.8rem; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; word-break: break-word; overflow-wrap: break-word; white-space: normal; }
         .pdf-card-meta { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
         .pdf-card-actions { display: flex; gap: 4px; flex-shrink: 0; }
         .btn-icon-pdf { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 4px 6px; border-radius: 4px; transition: background 0.15s; }
@@ -511,7 +522,7 @@
                 </div>
 
                 <!-- Botões de Ação -->
-                <div class="flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 no-print">
+                <div class="flex flex-col sm:flex-row flex-wrap gap-3 justify-end items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 no-print">
                     <button type="button" onclick="confirmClearAllForm()" 
                         class="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm border border-red-200 transition flex items-center justify-center space-x-2">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -692,23 +703,36 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <p class="text-xs text-slate-500">Desenhe a assinatura no quadro abaixo:</p>
+
+            <p class="text-xs text-slate-500">Desenhe a assinatura no quadro abaixo utilizando o dedo ou caneta touchscreen:</p>
+
             <div class="border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 overflow-hidden relative" style="height: 200px;">
                 <canvas id="modalCanvas" class="w-full h-full bg-white"></canvas>
             </div>
+
             <div class="flex justify-between items-center pt-2">
-                <button type="button" onclick="clearModalCanvas()" class="px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded border border-red-200">
-                    Limpar Tela
+                <button type="button" onclick="clearModalCanvas()" 
+                    class="px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded border border-red-200 flex items-center space-x-1">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    <span>Limpar Tela</span>
                 </button>
+
                 <div class="flex space-x-2">
-                    <button type="button" onclick="closeSignatureModal()" class="px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg text-xs">Cancelar</button>
-                    <button type="button" onclick="saveSignature()" class="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg text-xs">Confirmar</button>
+                    <button type="button" onclick="closeSignatureModal()" 
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs">
+                        Cancelar
+                    </button>
+                    <button type="button" onclick="saveSignature()" 
+                        class="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg text-xs flex items-center space-x-1">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        <span>Confirmar Assinatura</span>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
+    <script type="text/armazem">
         lucide.createIcons();
         const LOGO_DGAD_SUPORTE = "infracao.png";
         const STORAGE_KEY = 'detran_auto_infracao_v1';
@@ -798,11 +822,11 @@
                 ft2Id: document.getElementById('inputFT2Id').value,
                 signatures: signatures
             };
-            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(formData)); } catch(_) {}
+            try { Armazem.ls.setItem(STORAGE_KEY, JSON.stringify(formData)); } catch(_) {}
         }
 
         function loadSavedData() {
-            const saved = localStorage.getItem(STORAGE_KEY);
+            const saved = Armazem.ls.getItem(STORAGE_KEY);
             if (!saved) return;
             try {
                 const d = JSON.parse(saved);
@@ -868,7 +892,7 @@
             });
 
             clearModalCanvas();
-            localStorage.removeItem(STORAGE_KEY);
+            Armazem.ls.removeItem(STORAGE_KEY);
             updatePreview();
         }
 
@@ -1288,9 +1312,9 @@
         }
 
         function salvarPDFHistorico(obj) {
-            let h = JSON.parse(localStorage.getItem('historico_pdfs_infracao')) || [];
+            let h = JSON.parse(Armazem.ls.getItem('historico_pdfs_infracao')) || [];
             h.unshift(obj);
-            try { localStorage.setItem('historico_pdfs_infracao', JSON.stringify(h)); } catch(e) { h.pop(); }
+            try { Armazem.ls.setItem('historico_pdfs_infracao', JSON.stringify(h)); } catch(e) { h.pop(); }
             renderizarGridPDFs();
         }
 
@@ -1298,7 +1322,7 @@
             const container = document.getElementById('grid-pdfs-container');
             if (!container) return;
             const termo = (document.getElementById('busca-pdf')?.value || '').toLowerCase().trim();
-            let h = JSON.parse(localStorage.getItem('historico_pdfs_infracao')) || [];
+            let h = JSON.parse(Armazem.ls.getItem('historico_pdfs_infracao')) || [];
             if (termo) {
                 h = h.filter(i => (i.nome + ' ' + i.empresa + ' ' + i.cnpj).toLowerCase().includes(termo));
             }
@@ -1337,9 +1361,10 @@
             }).then(() => { window.location.reload(); });
         }
 
-        function baixarPDFHistorico(id) {
-            const h = JSON.parse(localStorage.getItem('historico_pdfs_infracao')) || [];
+        async function baixarPDFHistorico(id) {
+            const h = JSON.parse(Armazem.ls.getItem('historico_pdfs_infracao')) || [];
             const p = h.find(i => String(i.id) === String(id));
+            await Armazem.completar(p);
             if (!p || !p.dataUri) return;
 
             try {
@@ -1374,9 +1399,10 @@
             return new Blob([bytes], { type: mime });
         }
 
-        function abrirPDF(id) {
-            const h = JSON.parse(localStorage.getItem('historico_pdfs_infracao')) || [];
+        async function abrirPDF(id) {
+            const h = JSON.parse(Armazem.ls.getItem('historico_pdfs_infracao')) || [];
             const p = h.find(i => String(i.id) === String(id));
+            await Armazem.completar(p);
             if (!p || !p.dataUri) return;
 
             let url;
@@ -1416,9 +1442,9 @@
                 cancelButtonText: 'CANCELAR'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    let h = JSON.parse(localStorage.getItem('historico_pdfs_infracao')) || [];
+                    let h = JSON.parse(Armazem.ls.getItem('historico_pdfs_infracao')) || [];
                     h = h.filter(i => String(i.id) !== String(id));
-                    localStorage.setItem('historico_pdfs_infracao', JSON.stringify(h));
+                    Armazem.ls.setItem('historico_pdfs_infracao', JSON.stringify(h));
                     renderizarGridPDFs();
                     Swal.fire({
                         icon: 'success',
@@ -1440,6 +1466,15 @@ document.addEventListener('input', function (e) {
         if (v !== t.value) t.value = v;
     }
 });
+</script>
+<script>
+(function () {
+    if (window.Armazem) return;
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#fff;color:#b91c1c;font:700 16px sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;text-transform:uppercase');
+    d.textContent = 'ARQUIVO "armazem.js" NÃO ENCONTRADO. COPIE armazem.js, nuvem.js E firebase-config.js PARA A MESMA PASTA DESTA PÁGINA.';
+    document.body.appendChild(d);
+})();
 </script>
 </body>
 </html>

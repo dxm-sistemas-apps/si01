@@ -3,8 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="DGAD">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <script src="pwa.js" defer></script>
     <title>TERMO DE ATESTADO DE TREINAMENTO - DESMONTE.RJ</title>
     <!-- Tailwind CSS CDN -->
+    <script src="firebase-config.js"></script>
+    <script src="armazem.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -399,7 +410,7 @@
                 </div>
 
                 <!-- Botões de Ação -->
-                <div class="flex flex-col sm:flex-row gap-3 justify-center items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 no-print">
+                <div class="flex flex-col sm:flex-row gap-3 justify-end items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 no-print">
                     <button type="button" onclick="confirmClearAllForm()" 
                         class="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm border border-red-200 transition flex items-center justify-center space-x-2">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -577,7 +588,7 @@
         </div>
     </div>
 
-    <script>
+    <script type="text/armazem">
         lucide.createIcons();
 
         const LOGO_DGAD_SUPORTE = "suporte.png"; 
@@ -631,12 +642,12 @@
             };
 
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+                Armazem.ls.setItem(STORAGE_KEY, JSON.stringify(formData));
             } catch (_) {}
         }
 
         function loadSavedData() {
-            const saved = localStorage.getItem(STORAGE_KEY);
+            const saved = Armazem.ls.getItem(STORAGE_KEY);
             if (!saved) return;
 
             try {
@@ -1044,7 +1055,7 @@
                 if (docImg) { docImg.src = ''; docImg.style.display = 'none'; }
             });
 
-            localStorage.removeItem(STORAGE_KEY);
+            Armazem.ls.removeItem(STORAGE_KEY);
             clearErrors();
             updatePreview();
         }
@@ -1147,13 +1158,13 @@
         }
 
         function salvarPDFHistorico(o) {
-            let h = JSON.parse(localStorage.getItem('historico_pdfs_suporte')) || [];
+            let h = JSON.parse(Armazem.ls.getItem('historico_pdfs_suporte')) || [];
             h.unshift(o);
             
             let salvou = false;
             while (!salvou && h.length > 0) {
                 try {
-                    localStorage.setItem('historico_pdfs_suporte', JSON.stringify(h));
+                    Armazem.ls.setItem('historico_pdfs_suporte', JSON.stringify(h));
                     salvou = true;
                 } catch (e) {
                     if (h.length > 1) {
@@ -1172,7 +1183,7 @@
             if (!container) return;
 
             const termoBusca = (document.getElementById('busca-pdf')?.value || '').toLowerCase().trim();
-            let historico = JSON.parse(localStorage.getItem('historico_pdfs_suporte')) || [];
+            let historico = JSON.parse(Armazem.ls.getItem('historico_pdfs_suporte')) || [];
 
             historico.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
@@ -1217,9 +1228,10 @@
             return new Blob([bytes], { type: mime });
         }
 
-        function abrirPDF(id) {
-            const h = JSON.parse(localStorage.getItem('historico_pdfs_suporte')) || [];
+        async function abrirPDF(id) {
+            const h = JSON.parse(Armazem.ls.getItem('historico_pdfs_suporte')) || [];
             const p = h.find(i => String(i.id) === String(id));
+            await Armazem.completar(p);
             if (!p || !p.dataUri) return;
 
             let url;
@@ -1260,9 +1272,10 @@
             }).then(() => { window.location.reload(); });
         }
 
-        function baixarPDFHistorico(id) {
-            const h = JSON.parse(localStorage.getItem('historico_pdfs_suporte')) || [];
+        async function baixarPDFHistorico(id) {
+            const h = JSON.parse(Armazem.ls.getItem('historico_pdfs_suporte')) || [];
             const p = h.find(i => String(i.id) === String(id));
+            await Armazem.completar(p);
             if (!p || !p.dataUri) return;
 
             try {
@@ -1298,10 +1311,10 @@
                 cancelButtonText: 'CANCELAR'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    let h = JSON.parse(localStorage.getItem('historico_pdfs_suporte')) || [];
+                    let h = JSON.parse(Armazem.ls.getItem('historico_pdfs_suporte')) || [];
                     h = h.filter(i => String(i.id) !== String(id));
                     try {
-                        localStorage.setItem('historico_pdfs_suporte', JSON.stringify(h));
+                        Armazem.ls.setItem('historico_pdfs_suporte', JSON.stringify(h));
                     } catch (_) {}
                     renderizarGridPDFs();
                     Swal.fire({
@@ -1334,5 +1347,14 @@
             return false;
         }
     </script>
+<script>
+(function () {
+    if (window.Armazem) return;
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#fff;color:#b91c1c;font:700 16px sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;text-transform:uppercase');
+    d.textContent = 'ARQUIVO "armazem.js" NÃO ENCONTRADO. COPIE armazem.js, nuvem.js E firebase-config.js PARA A MESMA PASTA DESTA PÁGINA.';
+    document.body.appendChild(d);
+})();
+</script>
 </body>
 </html>

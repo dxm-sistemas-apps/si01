@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="DGAD">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <script src="pwa.js" defer></script>
     <title>ÍTENS DE RASTREABILIDADE (CARRO)</title>
+    <script src="firebase-config.js"></script>
+    <script src="armazem.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Alertas SweetAlert2 sempre centralizados e totalmente visíveis na parte visível da tela -->
@@ -436,7 +447,7 @@
             </div>
         </section>
 
-        <div id="barra-acoes" class="no-print mt-8 flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <div id="barra-acoes" class="no-print mt-8 flex flex-col sm:flex-row flex-wrap gap-3 justify-end items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
             <button id="btn-processar-agregados" onclick="encerrarContagemAgregados()" class="hidden bg-amber-500 hover:bg-amber-400 text-white font-bold py-2.5 px-8 rounded shadow-md text-sm tracking-wide uppercase transition-all transform hover:scale-[1.01]">
                 ADICIONAR ITENS COMPLETOS
             </button>
@@ -473,7 +484,7 @@
       <div class="pdf-grid" id="grid-pdfs-container"></div>
     </div>
 
-<script>
+<script type="text/armazem">
 const LOGO_DGAD_SUPORTE = "carro.png";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1093,13 +1104,13 @@ function compartilharPDFWhatsApp() {
 }
 
 function salvarPDFHistorico(pdfObj) {
-    let historico = JSON.parse(localStorage.getItem('historico_pdfs_carro')) || [];
+    let historico = JSON.parse(Armazem.ls.getItem('historico_pdfs_carro')) || [];
     historico.unshift(pdfObj); 
     
     let salvou = false;
     while (!salvou && historico.length > 0) {
         try {
-            localStorage.setItem('historico_pdfs_carro', JSON.stringify(historico));
+            Armazem.ls.setItem('historico_pdfs_carro', JSON.stringify(historico));
             salvou = true;
         } catch(e) {
             if (historico.length > 1) {
@@ -1118,7 +1129,7 @@ function renderizarGridPDFs() {
     if (!container) return;
 
     const termoBusca = (document.getElementById('busca-pdf')?.value || '').toLowerCase().trim();
-    let historico = JSON.parse(localStorage.getItem('historico_pdfs_carro')) || [];
+    let historico = JSON.parse(Armazem.ls.getItem('historico_pdfs_carro')) || [];
 
     historico.sort((a, b) => b.timestamp - a.timestamp);
 
@@ -1156,9 +1167,10 @@ function renderizarGridPDFs() {
     `).join('');
 }
 
-function abrirPDF(id) {
-    const historico = JSON.parse(localStorage.getItem('historico_pdfs_carro')) || [];
+async function abrirPDF(id) {
+    const historico = JSON.parse(Armazem.ls.getItem('historico_pdfs_carro')) || [];
     const pdfObj = historico.find(item => String(item.id) === String(id));
+    await Armazem.completar(pdfObj);
     if (pdfObj && pdfObj.dataUri) {
         try {
             const byteString = atob(pdfObj.dataUri.split(',')[1]);
@@ -1205,9 +1217,10 @@ function avisarDownloadEAtualizar() {
     }).then(() => { window.location.reload(); });
 }
 
-function baixarPDFHistorico(id) {
-    const historico = JSON.parse(localStorage.getItem('historico_pdfs_carro')) || [];
+async function baixarPDFHistorico(id) {
+    const historico = JSON.parse(Armazem.ls.getItem('historico_pdfs_carro')) || [];
     const pdfObj = historico.find(item => String(item.id) === String(id));
+    await Armazem.completar(pdfObj);
     if (!pdfObj || !pdfObj.dataUri) return;
 
     const byteString = atob(pdfObj.dataUri.split(',')[1]);
@@ -1239,9 +1252,9 @@ function excluirPDF(id) {
         cancelButtonText: 'CANCELAR'
     }).then((result) => {
         if (result.isConfirmed) {
-            let historico = JSON.parse(localStorage.getItem('historico_pdfs_carro')) || [];
+            let historico = JSON.parse(Armazem.ls.getItem('historico_pdfs_carro')) || [];
             historico = historico.filter(item => String(item.id) !== String(id));
-            localStorage.setItem('historico_pdfs_carro', JSON.stringify(historico));
+            Armazem.ls.setItem('historico_pdfs_carro', JSON.stringify(historico));
             renderizarGridPDFs();
             Swal.fire({
                 icon: 'success',
@@ -1548,7 +1561,7 @@ if (foiCompartilhado) {
 }
 
 function limparTabelaDireto() {
-    localStorage.removeItem('rascunho_carro');
+    Armazem.ls.removeItem('rascunho_carro');
     dadosAgregadosPorModo = {
         "etiquetada": { "kit-code-etq": "", "motor-completo-etq": "", "radiador-completo-etq": "" },
         "nao-etiquetada": { "kit-code-netq": "", "motor-completo-netq": "", "radiador-completo-netq": "" },
@@ -1633,7 +1646,7 @@ function salvarProgresso() {
         sig3: document.getElementById('sig-empresa').toDataURL()
     };
     try {
-        localStorage.setItem('rascunho_carro', JSON.stringify(rascunho));
+        Armazem.ls.setItem('rascunho_carro', JSON.stringify(rascunho));
     } catch (_) {}
 }
 
@@ -1657,7 +1670,7 @@ function limparTabela() {
         if (result.isConfirmed) {
             window.isClearing = true;
             window.foiConfirmadoLimpar = true;
-            localStorage.removeItem('rascunho_carro');
+            Armazem.ls.removeItem('rascunho_carro');
             
             dadosAgregadosPorModo = {
                 "etiquetada": { "kit-code-etq": "", "motor-completo-etq": "", "radiador-completo-etq": "" },
@@ -1788,7 +1801,7 @@ window.onload = () => {
     }, 150);
     canvases.forEach(id => { ajustarResolucaoCanvas(id); });
 
-    const rascunho = JSON.parse(localStorage.getItem('rascunho_carro'));
+    const rascunho = JSON.parse(Armazem.ls.getItem('rascunho_carro'));
     if (!rascunho) return;
 
     document.getElementById('info-nome').value = rascunho.nome || "";
@@ -1863,6 +1876,15 @@ document.addEventListener('input', function (e) {
         if (v !== t.value) t.value = v;
     }
 });
+</script>
+<script>
+(function () {
+    if (window.Armazem) return;
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#fff;color:#b91c1c;font:700 16px sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;text-transform:uppercase');
+    d.textContent = 'ARQUIVO "armazem.js" NÃO ENCONTRADO. COPIE armazem.js, nuvem.js E firebase-config.js PARA A MESMA PASTA DESTA PÁGINA.';
+    document.body.appendChild(d);
+})();
 </script>
 </body>
 </html>
